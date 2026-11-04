@@ -49,6 +49,8 @@ next-env.d.ts
 /owners.txt
 /schedule.txt
 /plan/
+/DESIGN.md
+/PRODUCT.md
 
 # graphify knowledge graph
 graphify-out/

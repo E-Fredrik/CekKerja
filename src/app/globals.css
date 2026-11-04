@@ -1,26 +1,90 @@
 @import "tailwindcss";
+@import "./tokens.css";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
+/* Design system tokens live in tokens.css. Use them, never raw hex values, in feature styles.
+   Tailwind utilities below map to the same tokens: bg-surface, text-ink, text-stop-text,
+   bg-warn-wash, border-line-strong, rounded-sm/md/lg/full, text-body, text-title-1, ... */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
+  --font-sans: var(--font-ui);
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, monospace;
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-ground: var(--ground);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-sign-blue: var(--sign-blue);
+  --color-on-sign-blue: var(--on-sign-blue);
+  --color-brand-wash: var(--brand-wash);
+  --color-shell: var(--shell);
+  --color-on-shell: var(--on-shell);
+  --color-on-shell-soft: var(--on-shell-soft);
+  --color-stop: var(--stop);
+  --color-stop-text: var(--stop-text);
+  --color-stop-wash: var(--stop-wash);
+  --color-on-stop: var(--on-stop);
+  --color-warn: var(--warn);
+  --color-warn-text: var(--warn-text);
+  --color-warn-wash: var(--warn-wash);
+  --color-on-warn: var(--on-warn);
+  --color-go: var(--go);
+  --color-go-text: var(--go-text);
+  --color-go-wash: var(--go-wash);
+  --color-on-go: var(--on-go);
+  --color-housing: var(--housing);
+
+  --text-large-title: var(--size-large-title);
+  --text-large-title--line-height: var(--leading-large-title);
+  --text-large-title--font-weight: var(--weight-large-title);
+  --text-large-title--letter-spacing: var(--tracking-large-title);
+  --text-title-1: var(--size-title-1);
+  --text-title-1--line-height: var(--leading-title-1);
+  --text-title-1--font-weight: var(--weight-title-1);
+  --text-title-1--letter-spacing: var(--tracking-title-1);
+  --text-title-2: var(--size-title-2);
+  --text-title-2--line-height: var(--leading-title-2);
+  --text-title-2--font-weight: var(--weight-title-2);
+  --text-title-2--letter-spacing: var(--tracking-title-2);
+  --text-figure: var(--size-figure);
+  --text-figure--line-height: var(--leading-figure);
+  --text-figure--font-weight: var(--weight-figure);
+  --text-figure--letter-spacing: var(--tracking-figure);
+  --text-headline: var(--size-headline);
+  --text-headline--line-height: var(--leading-headline);
+  --text-headline--font-weight: var(--weight-headline);
+  --text-body: var(--size-body);
+  --text-body--line-height: var(--leading-body);
+  --text-quote: var(--size-quote);
+  --text-quote--line-height: var(--leading-quote);
+  --text-callout: var(--size-callout);
+  --text-callout--line-height: var(--leading-callout);
+  --text-footnote: var(--size-footnote);
+  --text-footnote--line-height: var(--leading-footnote);
+  --text-footnote--font-weight: var(--weight-footnote);
+  --text-code: var(--size-code);
+  --text-code--line-height: var(--leading-code);
+  --text-code--font-weight: var(--weight-code);
+  --text-code--letter-spacing: var(--tracking-code);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-ui), system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: var(--size-body);
+  line-height: var(--leading-body);
+  caret-color: var(--sign-blue);
+  accent-color: var(--sign-blue);
+}
+
+::selection {
+  background: var(--brand-wash);
+  color: var(--ink);
+}
+
+:focus-visible {
+  outline: 3px solid var(--sign-blue);
+  outline-offset: 2px;
 }

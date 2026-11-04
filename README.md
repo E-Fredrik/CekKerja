@@ -29,6 +29,7 @@ Status is updated with every feature pull request: Not started, In progress, Don
 ## Progress so far
 
 - Project set up: Next.js, TypeScript and Tailwind CSS, with the team's branch and pull request workflow.
+- Design system defined: verdicts drawn as road signs, a traffic-light result summary, shared colour and type tokens for light and dark mode.
 
 ## Tech stack
 
