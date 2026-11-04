@@ -1,6 +1,5 @@
 import { z } from "zod";
 
-// red = Melanggar? / Violation?, yellow = Cek lagi / Check again, green = Aman / OK (DESIGN.md).
 export const Verdict = z.enum(["red", "yellow", "green"]);
 
 export const Flag = z.object({

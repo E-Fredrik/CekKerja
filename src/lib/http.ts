@@ -1,4 +1,4 @@
-import type { Mode } from "./ai/gemini.ts";
+import { AI_BUSY_MESSAGE, type Mode } from "./ai/gemini.ts";
 
 export type Lang = "id" | "en";
 
@@ -7,7 +7,6 @@ export const UPLOAD_TYPES = ["application/pdf", "image/png", "image/jpeg", "imag
 
 export class BadRequest extends Error {}
 
-// Anything unexpected falls back to the defaults: Indonesian and the fast model.
 export const langOf = (v: unknown): Lang => (v === "en" ? "en" : "id");
 export const modeOf = (v: unknown): Mode => (v === "smart" ? "smart" : "fast");
 
@@ -18,8 +17,6 @@ export function checkFile(file: unknown, label: string): File {
   return file;
 }
 
-// Wraps a route handler so every failure becomes a { error } JSON with the right status.
-// ponytail: no auth or plan checks yet; add them here when accounts (K07) and Premium (K09) land.
 export function handle(fn: (req: Request) => Promise<unknown>) {
   return async (req: Request) => {
     try {
@@ -27,8 +24,8 @@ export function handle(fn: (req: Request) => Promise<unknown>) {
     } catch (e) {
       const status = e instanceof BadRequest ? 400 : 500;
       if (status === 500) console.error(e);
-      // 500s can carry internal details, so only BadRequest messages and our own busy message go out.
-      const message = e instanceof Error && (status === 400 || /busy right now/.test(e.message)) ? e.message : "Something went wrong. Try again.";
+      const safeToShow = e instanceof Error && (status === 400 || e.message === AI_BUSY_MESSAGE);
+      const message = safeToShow ? e.message : "Something went wrong. Try again.";
       return Response.json({ error: message }, { status });
     }
   };
