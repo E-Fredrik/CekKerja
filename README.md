@@ -14,54 +14,21 @@ Team 04, Cloud Computing. SDG 8 (Decent Work and Economic Growth) and SDG 10 (Re
 
 ## Features
 
-| Feature | What it does |
-|---|---|
-| Cek lowongan (job ad check) | Paste a job ad or link. Flags discriminatory or exploitative requirements (age, gender, appearance, unpaid internships) with the rule they may break, a question to ask, and an inclusive rewrite. |
-| Cek kontrak (contract check) | Upload a contract PDF or photo. Each clause gets a red, yellow or green mark with its legal basis, plus a polite message for HR. |
-| Latihan interview (interview prep) | Reads the job ad, the company site and public interview question pages, then tailors questions to the candidate's profile and CV. |
-| Web mailer | Emails a result to the user's own address. |
-| Accounts and history | Sign up, log in, and see past checks. (planned) |
-| Premium | Free plan with monthly limits; Premium through Midtrans. (planned) |
-| CI/CD | Automatic checks on every pull request and deployment. (planned) |
+Status is updated with every feature pull request: Not started, In progress, Done.
 
-## Progress
+| Feature | What it does | Status |
+|---|---|---|
+| Cek lowongan (job ad check) | Paste a job ad or link. Flags discriminatory or exploitative requirements (age, gender, appearance, unpaid internships) with the rule they may break, a question to ask, and an inclusive rewrite. | Not started |
+| Cek kontrak (contract check) | Upload a contract PDF or photo. Each clause gets a red, yellow or green mark with its legal basis, plus a polite message for HR. | Not started |
+| Latihan interview (interview prep) | Reads the job ad, the company site and public interview question pages, then tailors questions to the candidate's profile and CV. | Not started |
+| Bilingual interface | Every page in Bahasa Indonesia and English, with a language toggle. | Not started |
+| Web mailer | Emails a result to the user's own address. | Not started |
+| Accounts and history | Sign up, log in, and see past checks. | Not started |
+| Premium | Free plan with monthly limits; Premium through Midtrans. | Not started |
 
-Every feature pull request updates this table. Status: Planned, In progress, Done.
+## Progress so far
 
-| Task | Feature | Opens | Status |
-|---|---|---|---|
-| T01 | Repository skeleton, ownership and commit rules | 4 Nov | Done |
-| K01 | App shell, header and language toggle | 5 Nov | Planned |
-| L01 | Gemini client and response schemas | 5 Nov | Planned |
-| D01 | Safe page fetcher and text extraction | 5 Nov | Planned |
-| K02 | Form and result components | 6 Nov | Planned |
-| L02 | Labour rules and number checks | 6 Nov | Planned |
-| D02 | Job ad check API | 7 Nov | Planned |
-| L03 | Contract check API | 7 Nov | Planned |
-| K03 | Web mailer with Nodemailer | 8 Nov | Planned |
-| D03 | Job ad check page | 9 Nov | Planned |
-| L04 | Contract check page | 9 Nov | Planned |
-| K04 | Email result button | 10 Nov | Planned |
-| D04 | Interview question sources | 11 Nov | Planned |
-| L05 | AI mode selector | 11 Nov | Planned |
-| K05 | Landing page | 13 Nov | Planned |
-| D05 | Interview prep API | 13 Nov | Planned |
-| D06 | Interview prep page | 15 Nov | Planned |
-| L06, D07, K06 | Integration fixes (first complete version) | 17 Nov | Planned |
-| K07 | Supabase setup and accounts | 19 Nov (tentative) | Planned |
-| D08 | Interview prep with CV and portfolio upload | 20 Nov | Planned |
-| K08 | Check history | 21 Nov (tentative) | Planned |
-| L07 | Law corpus and citations | 21 Nov (tentative) | Planned |
-| D09 | Accessibility and mobile pass | 22 Nov | Planned |
-| L08 | Minimum wage data | 23 Nov (tentative) | Planned |
-| K09 | Premium and Midtrans payment | 24 Nov (tentative) | Planned |
-| L09 | CI/CD implementation | 25 Nov (tentative) | Planned |
-| L10, D10, K10 | Integration fixes (accounts, history, Premium, CI/CD) | 28 Nov | Planned |
-| L11, D11, K11 | Testing and bug fixes | 1 Dec | Planned |
-| L12, D12, K12 | Final polish | 3 Dec | Planned |
-| T02 | Final presentation and demo | 4 Dec | Planned |
-
-Dates marked (tentative) depend on class topics (Supabase, CI/CD) and may move.
+- Project set up: Next.js, TypeScript and Tailwind CSS, with the team's branch and pull request workflow.
 
 ## Tech stack
 
@@ -69,9 +36,8 @@ Dates marked (tentative) depend on class topics (Supabase, CI/CD) and may move.
 - **AI:** Gemini API (`@google/genai`), with zod-validated JSON output
 - **Scraping:** cheerio, with robots.txt and safe-URL checks
 - **Email:** Nodemailer over SMTP
-- **Database and auth (planned):** Supabase
-- **Payments (planned):** Midtrans Snap (sandbox)
-- **CI/CD (planned):** GitHub Actions
+- **Database and auth:** Supabase
+- **Payments:** Midtrans Snap (sandbox)
 
 ## Getting started
 
@@ -95,5 +61,5 @@ npm run dev                  # http://localhost:3000
 
 - Every feature has its own branch, named after the feature (for example `contract-check-api`).
 - Work reaches `main` only through pull requests, and a teammate reviews each one before it is merged.
-- Every feature pull request updates the progress table above.
+- Every feature pull request updates the feature status and the progress list above.
 - Commit messages are plain sentences, for example `Add the contract check API`.
