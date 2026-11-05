@@ -54,12 +54,12 @@ export const RULES: Rule[] = [
   },
   {
     id: "job-seeker-fee",
-    verdict: "red",
+    verdict: "yellow",
     scope: ["ad", "contract"],
-    source: "UU 13/2003 Pasal 38",
+    source: "UU 13/2003 Pasal 38 ayat (1) dan (2)",
     summary: {
-      id: "Pelamar tidak seharusnya membayar biaya pelatihan, seragam, deposit atau biaya lain untuk mendapat pekerjaan.",
-      en: "Applicants should not pay for training, uniforms, deposits or other fees to get a job.",
+      id: "Biaya penempatan kerja dibebankan kepada pemberi kerja, bukan pelamar, kecuali untuk golongan dan jabatan tertentu. Permintaan biaya pelatihan, seragam atau deposit sering menjadi tanda penipuan.",
+      en: "Job placement fees are charged to the employer, not the applicant, except for certain job groups. Requests to pay for training, uniforms or deposits are a common sign of a scam.",
     },
   },
   {
@@ -68,8 +68,8 @@ export const RULES: Rule[] = [
     scope: ["ad", "contract"],
     source: "Surat Edaran Menaker M/5/HK.04.00/V/2025",
     summary: {
-      id: "Pemberi kerja dilarang menahan ijazah atau dokumen pribadi asli milik pekerja.",
-      en: "Employers may not hold a worker's original diploma or personal documents.",
+      id: "Pemberi kerja dilarang mensyaratkan atau menahan ijazah dan dokumen pribadi milik pekerja sebagai jaminan untuk bekerja.",
+      en: "Employers may not require or hold a worker's diploma or personal documents as a guarantee for the job.",
     },
   },
   {
@@ -86,7 +86,7 @@ export const RULES: Rule[] = [
     id: "unpaid-internship",
     verdict: "red",
     scope: ["ad", "contract"],
-    source: "Permenaker 6/2020 tentang Pemagangan di Dalam Negeri",
+    source: "Permenaker 6/2020 Pasal 13",
     summary: {
       id: "Peserta magang berhak atas uang saku, jaminan sosial dan sertifikat.",
       en: "Interns have the right to an allowance, social security and a certificate.",
@@ -96,7 +96,7 @@ export const RULES: Rule[] = [
     id: "internship-length",
     verdict: "red",
     scope: ["ad", "contract"],
-    source: "Permenaker 6/2020 tentang Pemagangan di Dalam Negeri",
+    source: "Permenaker 6/2020 Pasal 5",
     summary: {
       id: "Magang paling lama 1 tahun.",
       en: "An internship lasts at most 1 year.",
