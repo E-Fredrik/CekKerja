@@ -31,6 +31,7 @@ Status is updated with every feature pull request: Not started, In progress, Don
 - Project set up: Next.js, TypeScript and Tailwind CSS, with the team's branch and pull request workflow.
 - Design system defined: verdicts drawn as road signs, a traffic-light result summary, shared colour and type tokens for light and dark mode.
 - AI client ready: Gemini answers are checked against fixed JSON schemas, and a busy or broken answer falls back to another model automatically.
+- Safe page reader ready: links to job ads and company sites are read with robots.txt respected, private and local addresses blocked, and a time and size limit, then turned into clean text and a list of interview questions.
 
 ## Tech stack
 
