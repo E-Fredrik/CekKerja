@@ -21,7 +21,7 @@ Status is updated with every feature pull request: Not started, In progress, Don
 | Cek lowongan (job ad check) | Paste a job ad or link. Flags discriminatory or exploitative requirements (age, gender, appearance, unpaid internships) with the rule they may break, a question to ask, and an inclusive rewrite. | Not started |
 | Cek kontrak (contract check) | Upload a contract PDF or photo. Each clause gets a red, yellow or green mark with its legal basis, plus a polite message for HR. | Not started |
 | Latihan interview (interview prep) | Reads the job ad, the company site and public interview question pages, then tailors questions to the candidate's profile and CV. | Not started |
-| Bilingual interface | Every page in Bahasa Indonesia and English, with a language toggle. | Not started |
+| Bilingual interface | Every page in Bahasa Indonesia and English, with a language toggle. | Done |
 | Web mailer | Emails a result to the user's own address. | Not started |
 | Accounts and history | Sign up, log in, and see past checks. | Not started |
 | Premium | Free plan with monthly limits; Premium through Midtrans. | Not started |
@@ -32,6 +32,7 @@ Status is updated with every feature pull request: Not started, In progress, Don
 - Design system defined: verdicts drawn as road signs, a traffic-light result summary, shared colour and type tokens for light and dark mode.
 - AI client ready: Gemini answers are checked against fixed JSON schemas, and a busy or broken answer falls back to another model automatically.
 - Safe page reader ready: links to job ads and company sites are read with robots.txt respected, private and local addresses blocked, and a time and size limit, then turned into clean text and a list of interview questions.
+- App shell done: NavBar with logo, tool links and slanted active underline; ID/EN language toggle remembered in localStorage; "not legal advice" footer; dark mode via design tokens.
 
 ## Tech stack
 
