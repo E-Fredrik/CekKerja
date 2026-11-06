@@ -36,6 +36,8 @@ Status is updated with every feature pull request: Not started, In progress, Don
 - App shell done: NavBar with logo, tool links and slanted active underline; ID/EN language toggle remembered in localStorage; "not legal advice" footer; dark mode via design tokens.
 - Shared UI components ready: road-sign verdict marks and tags, traffic-light summary, wipe-in summary plate, finding rows with verbatim quotes, pill buttons, input and textarea fields, file drop zone, inline notices, and client check hook.
 
+- Automatic checks and deployment: every pull request is built, type-checked, linted and tested on GitHub Actions, and every change merged into `main` is deployed to the server.
+
 ## Tech stack
 
 - **Framework:** Next.js 16 (App Router, TypeScript), Tailwind CSS v4
