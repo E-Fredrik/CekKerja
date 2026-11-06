@@ -21,7 +21,7 @@ Status is updated with every feature pull request: Not started, In progress, Don
 | Cek lowongan (job ad check) | Paste a job ad or link. Flags discriminatory or exploitative requirements (age, gender, appearance, unpaid internships) with the rule they may break, a question to ask, and an inclusive rewrite. | Not started |
 | Cek kontrak (contract check) | Upload a contract PDF or photo. Each clause gets a red, yellow or green mark with its legal basis, plus a polite message for HR. | Not started |
 | Latihan interview (interview prep) | Reads the job ad, the company site and public interview question pages, then tailors questions to the candidate's profile and CV. | Not started |
-| Bilingual interface | Every page in Bahasa Indonesia and English, with a language toggle. | Done |
+| Bilingual interface | Every page in Bahasa Indonesia and English, with a language toggle. | In progress |
 | Web mailer | Emails a result to the user's own address. | Not started |
 | Accounts and history | Sign up, log in, and see past checks. | Not started |
 | Premium | Free plan with monthly limits; Premium through Midtrans. | Not started |
