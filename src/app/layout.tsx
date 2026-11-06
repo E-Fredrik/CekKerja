@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { Overpass } from "next/font/google";
 import "./globals.css";
+import { LangProvider } from "@/components/ui/lang.tsx";
+import { NavBar } from "@/components/ui/NavBar.tsx";
+import Footer from "@/components/ui/Footer.tsx";
 
-// Design system typeface (DESIGN.md): Overpass, variable weight, exposed as --font-ui.
 const overpass = Overpass({
   variable: "--font-ui",
   subsets: ["latin"],
@@ -11,13 +13,20 @@ const overpass = Overpass({
 
 export const metadata: Metadata = {
   title: "Cek Kerja",
-  description: "Cek lowongan, kontrak kerja, dan persiapan interview untuk mahasiswa dan fresh graduate.",
+  description:
+    "Cek lowongan, kontrak kerja, dan persiapan interview untuk mahasiswa dan fresh graduate.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="id" className={`${overpass.variable} h-full antialiased`}>
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col bg-ground text-ink">
+        <LangProvider>
+          <NavBar />
+          <main className="flex-1">{children}</main>
+          <Footer />
+        </LangProvider>
+      </body>
     </html>
   );
 }
