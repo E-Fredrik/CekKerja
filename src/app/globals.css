@@ -88,3 +88,14 @@ body {
   outline: 3px solid var(--sign-blue);
   outline-offset: 2px;
 }
+
+@keyframes plateWipe {
+  from {
+    opacity: 0;
+    transform: translateX(-16px) skewX(-2deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) skewX(0);
+  }
+}

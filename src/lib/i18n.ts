@@ -27,6 +27,37 @@ const id = {
     id: "ID",
     en: "EN",
   },
+  button: {
+    pending: "Memeriksa...",
+    submit: "Periksa",
+  },
+  field: {
+    required: "Wajib diisi",
+  },
+  fileDrop: {
+    idle: "Seret file ke sini atau klik untuk memilih",
+    hint: "PDF, PNG, JPG, atau WEBP · maks. 8 MB",
+    active: "Lepaskan untuk mengunggah",
+    selected: "File dipilih",
+    errorType: "Format tidak didukung. Gunakan PDF, PNG, JPG, atau WEBP.",
+    errorSize: "File terlalu besar. Maksimum 8 MB.",
+  },
+  verdict: {
+    red: "Melanggar?",
+    yellow: "Cek lagi",
+    green: "Aman",
+  },
+  trafficLight: {
+    srLabel: "{red} Melanggar?, {yellow} Cek lagi, {green} Aman",
+  },
+  finding: {
+    legalBasis: "Dasar hukum:",
+    question: "Tanyakan:",
+  },
+  check: {
+    errorNetwork: "Tidak dapat menghubungi server. Coba lagi.",
+    errorUnknown: "Terjadi kesalahan. Coba lagi.",
+  },
 } as const;
 
 export type Dict = DictShape<typeof id>;
@@ -47,6 +78,37 @@ const en: Dict = {
   lang: {
     id: "ID",
     en: "EN",
+  },
+  button: {
+    pending: "Checking...",
+    submit: "Check",
+  },
+  field: {
+    required: "Required",
+  },
+  fileDrop: {
+    idle: "Drag a file here or click to choose",
+    hint: "PDF, PNG, JPG, or WEBP · max 8 MB",
+    active: "Release to upload",
+    selected: "File selected",
+    errorType: "Format not supported. Use PDF, PNG, JPG, or WEBP.",
+    errorSize: "File too large. Maximum 8 MB.",
+  },
+  verdict: {
+    red: "Violation?",
+    yellow: "Check again",
+    green: "OK",
+  },
+  trafficLight: {
+    srLabel: "{red} Violation?, {yellow} Check again, {green} OK",
+  },
+  finding: {
+    legalBasis: "Legal basis:",
+    question: "Ask:",
+  },
+  check: {
+    errorNetwork: "Could not reach the server. Try again.",
+    errorUnknown: "An error occurred. Try again.",
   },
 };
 
