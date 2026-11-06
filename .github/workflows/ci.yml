@@ -31,6 +31,17 @@ jobs:
       group: deploy
       cancel-in-progress: false
     steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Assemble the standalone app
+        run: |
+          cp -r .next/static .next/standalone/.next/static
+          cp -r public .next/standalone/public
       - name: Set up SSH
         env:
           SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
@@ -40,7 +51,11 @@ jobs:
           printf '%s\n' "$SSH_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
-      - name: Deploy to the VPS
+      - name: Copy the app to the VPS
+        env:
+          VPS: ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}
+        run: rsync -az --delete --exclude .env .next/standalone/ "$VPS:htdocs/cekkerja.ked.my.id/"
+      - name: Restart the app
         env:
           VPS: ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}
         run: |
@@ -48,10 +63,8 @@ jobs:
           set -euo pipefail
           source ~/.nvm/nvm.sh
           cd ~/htdocs/cekkerja.ked.my.id
-          git fetch origin main
-          git reset --hard origin/main
-          npm ci
-          npm run build
-          pm2 reload cekkerja --update-env || pm2 start npm --name cekkerja -- start
+          command -v pm2 >/dev/null || npm install -g pm2
+          pm2 delete cekkerja >/dev/null 2>&1 || true
+          PORT=3000 HOSTNAME=127.0.0.1 pm2 start server.js --name cekkerja --node-args="--env-file=.env"
           pm2 save
           EOF
