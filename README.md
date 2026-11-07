@@ -19,7 +19,7 @@ Status is updated with every feature pull request: Not started, In progress, Don
 | Feature | What it does | Status |
 |---|---|---|
 | Cek lowongan (job ad check) | Paste a job ad or link. Flags discriminatory or exploitative requirements (age, gender, appearance, unpaid internships) with the rule they may break, a question to ask, and an inclusive rewrite. | In progress |
-| Cek kontrak (contract check) | Upload a contract PDF or photo. Each clause gets a red, yellow or green mark with its legal basis, plus a polite message for HR. | Not started |
+| Cek kontrak (contract check) | Upload a contract PDF or photo. Each clause gets a red, yellow or green mark with its legal basis, plus a polite message for HR. | In progress |
 | Latihan interview (interview prep) | Reads the job ad, the company site and public interview question pages, then tailors questions to the candidate's profile and CV. | Not started |
 | Bilingual interface | Every page in Bahasa Indonesia and English, with a language toggle. | In progress |
 | Web mailer | Emails a result to the user's own address. | Not started |
@@ -38,6 +38,7 @@ Status is updated with every feature pull request: Not started, In progress, Don
 - Shared UI components ready: road-sign verdict marks and tags, traffic-light summary, wipe-in summary plate, finding rows with verbatim quotes, pill buttons, input and textarea fields, file drop zone, inline notices, and client check hook.
 
 - Automatic checks and deployment: every pull request is built, type-checked, linted and tested on GitHub Actions, and every change merged into `main` is deployed to the server.
+- Contract check API ready: an uploaded contract PDF or photo is split into clauses, each marked red, yellow or green against the labour rules with its legal source, and plain code decides every wage and duration limit. A polite message to HR is included.
 
 ## Tech stack
 

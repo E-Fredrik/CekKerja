@@ -3,6 +3,8 @@ import assert from "node:assert/strict";
 import { withRetry, modelsFor, fileToPart } from "../src/lib/ai/gemini.ts";
 import { ContractResult, AdResult } from "../src/lib/ai/schemas.ts";
 import { BadRequest, checkFile, handle, langOf, modeOf } from "../src/lib/http.ts";
+import { analyzeContract, applyNumberChecks, contractPrompt } from "../src/lib/ai/analyze.ts";
+import type { generateJson } from "../src/lib/ai/gemini.ts";
 
 const fail = (status?: number, message = `HTTP ${status}`) => Object.assign(new Error(message), status ? { status } : {});
 const quiet = () => (console.warn = console.error = () => {});
@@ -99,4 +101,75 @@ test("handle returns JSON, 400 for BadRequest, and hides internal 500 details", 
   const busy = await handle(() => withRetry(() => Promise.reject(fail(503)), ["a"], 1))(req);
   assert.equal(busy.status, 500);
   assert.match((await busy.json()).error, /busy right now/);
+});
+
+const clause = (ruleId: string, verdict: "red" | "yellow" | "green") => ({ title: "t", text: "x", verdict, ruleId, explanation: "e", questionToAsk: "q" });
+
+const contract = (over: Partial<ContractResult>) =>
+  ContractResult.parse({
+    contractType: "PKWT",
+    summary: "s",
+    monthlyWage: null,
+    city: null,
+    durationMonths: null,
+    clauses: [],
+    negotiationMessage: "m",
+    ...over,
+  });
+
+test("applyNumberChecks lets code decide number rules and never the model", () => {
+  const out = applyNumberChecks(
+    contract({
+      contractType: "magang",
+      durationMonths: 18,
+      monthlyWage: 1_000_000,
+      clauses: [clause("internship-length", "green"), clause("minimum-wage", "red"), clause("pkwt-probation", "red")],
+    }),
+    null,
+  );
+  assert.deepEqual(
+    out.clauses.map((c) => [c.ruleId, c.verdict]),
+    [
+      ["internship-length", "red"],
+      ["minimum-wage", "yellow"],
+      ["pkwt-probation", "red"],
+    ],
+  );
+  assert.deepEqual(out.numberChecks, [{ ruleId: "internship-length", verdict: "red", found: 18, limit: 12 }]);
+});
+
+test("applyNumberChecks uses the wage check once a minimum wage is known", () => {
+  const out = applyNumberChecks(contract({ monthlyWage: 5_000_000, clauses: [clause("minimum-wage", "red")] }), 4_000_000);
+  assert.equal(out.clauses[0].verdict, "green");
+});
+
+test("applyNumberChecks attaches sources and maps unknown or ad-only rules to other", () => {
+  const out = applyNumberChecks(contract({ clauses: [clause("pkwt-probation", "red"), clause("made-up", "red"), clause("age-limit", "yellow")] }), null);
+  assert.deepEqual(
+    out.clauses.map((c) => [c.ruleId, c.source]),
+    [
+      ["pkwt-probation", "UU 13/2003 Pasal 58"],
+      ["other", null],
+      ["other", null],
+    ],
+  );
+});
+
+test("contractPrompt lists contract rules only and asks for the chosen language", () => {
+  assert.match(contractPrompt("en"), /pkwt-probation/);
+  assert.doesNotMatch(contractPrompt("en"), /age-limit/);
+  assert.match(contractPrompt("en"), /in English/);
+  assert.match(contractPrompt("id"), /in Bahasa Indonesia/);
+});
+
+test("analyzeContract sends the file to the model and applies the number checks", async () => {
+  let seen: { mime?: string; mode: string } | undefined;
+  const generate = (async (_schema: unknown, _system: string, parts: { inlineData?: { mimeType: string } }[], mode: string) => {
+    seen = { mime: parts[0].inlineData?.mimeType, mode };
+    return contract({ contractType: "PKWT", durationMonths: 72, clauses: [clause("pkwt-length", "green")] });
+  }) as unknown as typeof generateJson;
+  const file = new File([new Uint8Array([37, 80, 68, 70])], "kontrak.pdf", { type: "application/pdf" });
+  const out = await analyzeContract(file, "id", "smart", generate);
+  assert.deepEqual(seen, { mime: "application/pdf", mode: "smart" });
+  assert.equal(out.clauses[0].verdict, "red");
 });
