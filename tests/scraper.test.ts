@@ -5,6 +5,9 @@ import { assertPublicHost, checkUrl, isBlockedAddress } from "../src/lib/scraper
 import { extractQuestions, htmlToText } from "../src/lib/scraper/extract.ts";
 import { isAllowedByRobots, matchesPattern } from "../src/lib/scraper/robots.ts";
 import { USER_AGENT, fetchPage, type Fetcher } from "../src/lib/scraper/fetch-page.ts";
+import { MAX_AD_CHARS, analyzeAd, keepGroundedFlags, parseAdRequest, readAd } from "../src/app/api/check-ad/analyze-ad.ts";
+import { BadRequest } from "../src/lib/http.ts";
+import type { generateJson } from "../src/lib/ai/gemini.ts";
 
 const hasCode = (code: ScrapeErrorCode) => (error: unknown) => error instanceof ScrapeError && error.code === code;
 
@@ -333,4 +336,66 @@ test("fetchPage decodes the declared charset and reads plain text pages", async 
 test("fetchPage reports an unreachable site as a network error", async () => {
   const fetcher: Fetcher = async () => Promise.reject(new TypeError("fetch failed"));
   await assert.rejects(fetchPage("https://down.example.com/", { fetch: fetcher, lookup: publicLookup }), hasCode("network"));
+});
+
+const AD = "Dicari staf admin. Wanita, usia maksimal 25 tahun, berpenampilan menarik. Ijazah asli ditahan selama kontrak. Menguasai Excel.";
+
+const flag = (quote: string, ruleId: string) => ({ quote, verdict: "red" as const, ruleId, explanation: "x", questionToAsk: "y" });
+
+const fakeResult = (flags: ReturnType<typeof flag>[]) => ({ summary: "s", role: "Admin", company: "PT X", flags, inclusiveRewrite: "r" });
+
+test("parseAdRequest needs ad text or a link and defaults lang and mode", () => {
+  assert.deepEqual(parseAdRequest({ text: AD }), { text: AD, lang: "id", mode: "fast" });
+  assert.equal(parseAdRequest({ url: "https://jobs.example.com/1", lang: "en", mode: "weird" }).mode, "fast");
+  assert.throws(() => parseAdRequest({}), BadRequest);
+  assert.throws(() => parseAdRequest({ text: "   " }), BadRequest);
+  assert.throws(() => parseAdRequest(null), BadRequest);
+  assert.throws(() => parseAdRequest({ text: "a".repeat(MAX_AD_CHARS + 1) }), BadRequest);
+});
+
+test("readAd prefers pasted text, fetches a link otherwise, and rejects short ads", async () => {
+  const fetch = async () => ({ url: "https://jobs.example.com/1", text: AD });
+  assert.deepEqual(await readAd({ text: AD, url: "https://x.example.com", lang: "id", mode: "fast" }, async () => assert.fail()), { text: AD, sourceUrl: null });
+  assert.deepEqual(await readAd({ url: "https://jobs.example.com/1", lang: "id", mode: "fast" }, fetch), { text: AD, sourceUrl: "https://jobs.example.com/1" });
+  await assert.rejects(readAd({ text: "short", lang: "id", mode: "fast" }), BadRequest);
+});
+
+test("readAd turns a blocked or unreadable link into a bad request", async () => {
+  const blocked = async () => Promise.reject(new ScrapeError("blocked_address", "private address"));
+  await assert.rejects(readAd({ url: "http://127.0.0.1/", lang: "id", mode: "fast" }, blocked), (e) => e instanceof BadRequest && /private address/.test(e.message));
+  const broken = async () => Promise.reject(new Error("boom"));
+  await assert.rejects(readAd({ url: "https://jobs.example.com/", lang: "id", mode: "fast" }, broken), (e) => !(e instanceof BadRequest));
+});
+
+test("keepGroundedFlags drops quotes not in the ad and attaches the rule source", () => {
+  const kept = keepGroundedFlags(
+    [flag("usia  maksimal 25 TAHUN", "age-limit"), flag("must be under 20", "age-limit"), flag("Ijazah asli ditahan", "document-holding"), flag("Wanita", "made-up"), flag("Menguasai Excel", "pkwt-probation")],
+    AD,
+  );
+  assert.deepEqual(
+    kept.map((f) => [f.ruleId, f.source]),
+    [
+      ["age-limit", "UU 13/2003 Pasal 5"],
+      ["document-holding", "Surat Edaran Menaker M/5/HK.04.00/V/2025"],
+      ["other", null],
+      ["other", null],
+    ],
+  );
+});
+
+test("analyzeAd sends the ad as tagged data with the ad rules and returns grounded flags", async () => {
+  let seen: { system: string; text: string; mode: string } | undefined;
+  const generate = (async (_schema: unknown, system: string, parts: { text: string }[], mode: string) => {
+    seen = { system, text: parts[0].text, mode };
+    return fakeResult([flag("Wanita", "equal-opportunity"), flag("invented", "age-limit")]);
+  }) as unknown as typeof generateJson;
+  const out = await analyzeAd({ text: AD, lang: "en", mode: "smart" }, { generate });
+  assert.equal(seen?.mode, "smart");
+  assert.match(seen!.text, /^<job_ad>\n[\s\S]+\n<\/job_ad>$/);
+  assert.match(seen!.system, /age-limit/);
+  assert.doesNotMatch(seen!.system, /pkwt-probation/);
+  assert.match(seen!.system, /in English/);
+  assert.deepEqual(out.flags.map((f) => f.quote), ["Wanita"]);
+  assert.equal(out.adText, AD);
+  assert.equal(out.sourceUrl, null);
 });

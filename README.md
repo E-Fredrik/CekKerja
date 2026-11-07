@@ -18,7 +18,7 @@ Status is updated with every feature pull request: Not started, In progress, Don
 
 | Feature | What it does | Status |
 |---|---|---|
-| Cek lowongan (job ad check) | Paste a job ad or link. Flags discriminatory or exploitative requirements (age, gender, appearance, unpaid internships) with the rule they may break, a question to ask, and an inclusive rewrite. | Not started |
+| Cek lowongan (job ad check) | Paste a job ad or link. Flags discriminatory or exploitative requirements (age, gender, appearance, unpaid internships) with the rule they may break, a question to ask, and an inclusive rewrite. | In progress |
 | Cek kontrak (contract check) | Upload a contract PDF or photo. Each clause gets a red, yellow or green mark with its legal basis, plus a polite message for HR. | Not started |
 | Latihan interview (interview prep) | Reads the job ad, the company site and public interview question pages, then tailors questions to the candidate's profile and CV. | Not started |
 | Bilingual interface | Every page in Bahasa Indonesia and English, with a language toggle. | In progress |
@@ -33,6 +33,7 @@ Status is updated with every feature pull request: Not started, In progress, Don
 - AI client ready: Gemini answers are checked against fixed JSON schemas, and a busy or broken answer falls back to another model automatically.
 - Safe page reader ready: links to job ads and company sites are read with robots.txt respected, private and local addresses blocked, and a time and size limit, then turned into clean text and a list of interview questions.
 - Labour rules ready: a list of Indonesian labour rules, each with its legal source in both languages, and plain-code checks for the minimum wage and the length of internships and fixed-term contracts, so the AI never decides a number.
+- Job ad check API ready: a pasted job ad or a link is checked against the labour rules; every flag quotes the ad's exact words, cites its legal source and suggests a question to ask, followed by an inclusive rewrite of the ad.
 - App shell done: NavBar with logo, tool links and slanted active underline; ID/EN language toggle remembered in localStorage; "not legal advice" footer; dark mode via design tokens.
 - Shared UI components ready: road-sign verdict marks and tags, traffic-light summary, wipe-in summary plate, finding rows with verbatim quotes, pill buttons, input and textarea fields, file drop zone, inline notices, and client check hook.
 
