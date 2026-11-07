@@ -39,6 +39,7 @@ Status is updated with every feature pull request: Not started, In progress, Don
 
 - Automatic checks and deployment: every pull request is built, type-checked, linted and tested on GitHub Actions, and every change merged into `main` is deployed to the server.
 - Contract check API ready: an uploaded contract PDF or photo is split into clauses, each marked red, yellow or green against the labour rules with its legal source, and plain code decides every wage and duration limit. A polite message to HR is included.
+- Contract check page ready: upload a contract, see a traffic-light summary and every clause with its quote, legal basis and a question to ask, ordered from most to least serious, then copy a ready-made message for HR.
 
 ## Tech stack
 

@@ -58,6 +58,25 @@ const id = {
     errorNetwork: "Tidak dapat menghubungi server. Coba lagi.",
     errorUnknown: "Terjadi kesalahan. Coba lagi.",
   },
+  kontrak: {
+    title: "Cek kontrak kerja",
+    intro: "Unggah kontrak kerja atau magang kamu. Setiap klausul ditandai beserta dasar hukumnya, jadi kamu tahu apa yang perlu ditanyakan sebelum tanda tangan.",
+    upload: "Kontrak kamu",
+    submit: "Periksa kontrak",
+    headlineSome: "{count} klausul perlu kamu tanyakan.",
+    headlineNone: "Tidak ada klausul yang perlu ditanyakan.",
+    findings: "Hasil per klausul",
+    noSource: "Tidak ada di daftar aturan kami",
+    hrTitle: "Pesan untuk HR",
+    hrHint: "Salin pesan ini, lalu ubah sesuai kebutuhan kamu sebelum mengirimnya.",
+    copy: "Salin pesan",
+    copied: "Pesan tersalin",
+    again: "Periksa kontrak lain",
+    typePKWT: "Kontrak waktu tertentu (PKWT)",
+    typePKWTT: "Kontrak tetap (PKWTT)",
+    typeMagang: "Perjanjian magang",
+    typeUnknown: "Jenis kontrak belum jelas",
+  },
 } as const;
 
 export type Dict = DictShape<typeof id>;
@@ -109,6 +128,25 @@ const en: Dict = {
   check: {
     errorNetwork: "Could not reach the server. Try again.",
     errorUnknown: "An error occurred. Try again.",
+  },
+  kontrak: {
+    title: "Check a work contract",
+    intro: "Upload your work or internship contract. Each clause is marked with its legal basis, so you know what to ask before you sign.",
+    upload: "Your contract",
+    submit: "Check contract",
+    headlineSome: "{count} clauses to ask about.",
+    headlineNone: "No clauses to ask about.",
+    findings: "Results by clause",
+    noSource: "Not in our rule list",
+    hrTitle: "Message for HR",
+    hrHint: "Copy this message and adjust it before you send it.",
+    copy: "Copy message",
+    copied: "Message copied",
+    again: "Check another contract",
+    typePKWT: "Fixed-term contract (PKWT)",
+    typePKWTT: "Permanent contract (PKWTT)",
+    typeMagang: "Internship agreement",
+    typeUnknown: "Contract type unclear",
   },
 };
 
