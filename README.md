@@ -22,7 +22,7 @@ Status is updated with every feature pull request: Not started, In progress, Don
 | Cek kontrak (contract check) | Upload a contract PDF or photo. Each clause gets a red, yellow or green mark with its legal basis, plus a polite message for HR. | In progress |
 | Latihan interview (interview prep) | Reads the job ad, the company site and public interview question pages, then tailors questions to the candidate's profile and CV. | Not started |
 | Bilingual interface | Every page in Bahasa Indonesia and English, with a language toggle. | In progress |
-| Web mailer | Emails a result to the user's own address. | Not started |
+| Web mailer | Emails a result to the user's own address. | Done |
 | Accounts and history | Sign up, log in, and see past checks. | Not started |
 | Premium | Free plan with monthly limits; Premium through Midtrans. | Not started |
 
@@ -40,6 +40,7 @@ Status is updated with every feature pull request: Not started, In progress, Don
 - Automatic checks and deployment: every pull request is built, type-checked, linted and tested on GitHub Actions, and every change merged into `main` is deployed to the server.
 - Contract check API ready: an uploaded contract PDF or photo is split into clauses, each marked red, yellow or green against the labour rules with its legal source, and plain code decides every wage and duration limit. A polite message to HR is included.
 - Contract check page ready: upload a contract, see a traffic-light summary and every clause with its quote, legal basis and a question to ask, ordered from most to least serious, then copy a ready-made message for HR.
+- Web mailer ready: emails contract, job ad, and interview prep findings to the user's own address with clean HTML formatting, escaped inputs, and plain-text fallback.
 
 ## Tech stack
 
