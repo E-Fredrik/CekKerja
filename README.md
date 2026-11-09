@@ -18,7 +18,7 @@ Status is updated with every feature pull request: Not started, In progress, Don
 
 | Feature | What it does | Status |
 |---|---|---|
-| Cek lowongan (job ad check) | Paste a job ad or link. Flags discriminatory or exploitative requirements (age, gender, appearance, unpaid internships) with the rule they may break, a question to ask, and an inclusive rewrite. | In progress |
+| Cek lowongan (job ad check) | Paste a job ad or link. Flags discriminatory or exploitative requirements (age, gender, appearance, unpaid internships) with the rule they may break, a question to ask, and an inclusive rewrite. | Done |
 | Cek kontrak (contract check) | Upload a contract PDF or photo. Each clause gets a red, yellow or green mark with its legal basis, plus a polite message for HR. | In progress |
 | Latihan interview (interview prep) | Reads the job ad, the company site and public interview question pages, then tailors questions to the candidate's profile and CV. | Not started |
 | Bilingual interface | Every page in Bahasa Indonesia and English, with a language toggle. | In progress |
@@ -41,6 +41,7 @@ Status is updated with every feature pull request: Not started, In progress, Don
 - Contract check API ready: an uploaded contract PDF or photo is split into clauses, each marked red, yellow or green against the labour rules with its legal source, and plain code decides every wage and duration limit. A polite message to HR is included.
 - Contract check page ready: upload a contract, see a traffic-light summary and every clause with its quote, legal basis and a question to ask, ordered from most to least serious, then copy a ready-made message for HR.
 - Web mailer ready: emails contract, job ad, and interview prep findings to the user's own address with clean HTML formatting, escaped inputs, and plain-text fallback.
+- Job ad check page ready: paste a job ad or a link, see a traffic-light summary and every flagged requirement with the ad's exact words, its legal basis and a question to ask, then copy an inclusive version of the ad.
 
 ## Tech stack
 
