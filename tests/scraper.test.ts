@@ -399,3 +399,9 @@ test("analyzeAd sends the ad as tagged data with the ad rules and returns ground
   assert.equal(out.adText, AD);
   assert.equal(out.sourceUrl, null);
 });
+
+test("keepGroundedFlags drops minimum wage flags because only code may judge wages", () => {
+  const ad = `${AD} Gaji Rp2.000.000 per bulan.`;
+  const kept = keepGroundedFlags([flag("Gaji Rp2.000.000 per bulan", "minimum-wage"), flag("Wanita", "equal-opportunity")], ad);
+  assert.deepEqual(kept.map((f) => f.ruleId), ["equal-opportunity"]);
+});
