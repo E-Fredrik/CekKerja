@@ -4,14 +4,11 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import type { MotionValue } from "motion/react";
 import { useEffect, useMemo, useRef } from "react";
 import {
-  AdditiveBlending,
-  CanvasTexture,
   Color,
   CylinderGeometry,
   DoubleSide,
   ExtrudeGeometry,
   type Group,
-  type MeshBasicMaterial,
   type MeshStandardMaterial,
   type PointLight,
   Shape,
@@ -30,7 +27,7 @@ const LAMPS = [
   { key: "yellow", y: 0 },
   { key: "green", y: -0.98 },
 ] as const;
-const SWAY = 0.55;
+const START_ANGLE = -0.45;
 const SETTLE_RATE = 9;
 
 function readPalette(): Palette {
@@ -62,22 +59,6 @@ function roundedRect(width: number, height: number, radius: number) {
   return shape;
 }
 
-function glowTexture() {
-  const size = 128;
-  const canvas = document.createElement("canvas");
-  canvas.width = canvas.height = size;
-  const ctx = canvas.getContext("2d");
-  if (ctx) {
-    const gradient = ctx.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
-    gradient.addColorStop(0, "rgba(255,255,255,0.5)");
-    gradient.addColorStop(0.3, "rgba(255,255,255,0.22)");
-    gradient.addColorStop(1, "rgba(255,255,255,0)");
-    ctx.fillStyle = gradient;
-    ctx.fillRect(0, 0, size, size);
-  }
-  return new CanvasTexture(canvas);
-}
-
 function damp(current: number, target: number, delta: number) {
   return current + (target - current) * (1 - Math.exp(-SETTLE_RATE * delta));
 }
@@ -85,7 +66,6 @@ function damp(current: number, target: number, delta: number) {
 function SignalHead({ progress, palette }: { progress: MotionValue<number>; palette: Palette }) {
   const head = useRef<Group>(null);
   const lenses = useRef<MeshStandardMaterial[]>([]);
-  const glows = useRef<MeshBasicMaterial[]>([]);
   const lampLight = useRef<PointLight>(null);
   const levels = useRef([1, 0, 0]);
   const invalidate = useThree((state) => state.invalidate);
@@ -108,7 +88,6 @@ function SignalHead({ progress, palette }: { progress: MotionValue<number>; pale
     () => new CylinderGeometry(HOOD.radius, HOOD.radius, HOOD.length, 48, 1, true, Math.PI / 2 - HOOD.wrap, Math.PI + HOOD.wrap * 2),
     [],
   );
-  const glow = useMemo(() => glowTexture(), []);
 
   useEffect(() => progress.on("change", () => invalidate()), [progress, invalidate]);
   useFrame((_, delta) => {
@@ -117,7 +96,7 @@ function SignalHead({ progress, palette }: { progress: MotionValue<number>; pale
     let moving = false;
 
     if (head.current) {
-      const target = -SWAY + p * SWAY * 2;
+      const target = START_ANGLE + p * Math.PI * 2;
       head.current.rotation.y = damp(head.current.rotation.y, target, delta);
       if (Math.abs(head.current.rotation.y - target) > 0.0005) moving = true;
     }
@@ -135,9 +114,6 @@ function SignalHead({ progress, palette }: { progress: MotionValue<number>; pale
       material.color.copy(base[i]).multiplyScalar(0.16 + level * 0.84);
       material.emissiveIntensity = level * 0.9;
     });
-    glows.current.forEach((material, index) => {
-      material.opacity = levels.current[index % 3] * 0.9;
-    });
     if (lampLight.current) {
       lampLight.current.color.copy(base[lit]);
       lampLight.current.position.y = LAMPS[lit].y + HOOD.radius * 0.8;
@@ -149,7 +125,7 @@ function SignalHead({ progress, palette }: { progress: MotionValue<number>; pale
 
   return (
     <group position={[0, 0.55, 0]}>
-      <group ref={head} rotation={[0, -SWAY, 0]}>
+      <group ref={head} rotation={[0, START_ANGLE, 0]}>
         <mesh geometry={body}>
           <meshStandardMaterial color={palette.housing} roughness={0.42} metalness={0.25} />
         </mesh>
@@ -174,21 +150,6 @@ function SignalHead({ progress, palette }: { progress: MotionValue<number>; pale
                     emissive={palette[lamp.key]}
                     emissiveIntensity={0}
                     roughness={0.18}
-                  />
-                </mesh>
-                <mesh position={[0, 0, 0.14]}>
-                  <planeGeometry args={[1.5, 1.5]} />
-                  <meshBasicMaterial
-                    ref={(material) => {
-                      if (material) glows.current[side * 3 + i] = material;
-                    }}
-                    map={glow}
-                    color={palette[lamp.key]}
-                    transparent
-                    opacity={0}
-                    depthWrite={false}
-                    blending={AdditiveBlending}
-                    toneMapped={false}
                   />
                 </mesh>
                 <mesh geometry={hood} position={[0, 0, HOOD.length / 2]} rotation={[Math.PI / 2, 0, 0]}>
