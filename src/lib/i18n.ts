@@ -58,6 +58,12 @@ const id = {
     errorNetwork: "Tidak dapat menghubungi server. Coba lagi.",
     errorUnknown: "Terjadi kesalahan. Coba lagi.",
   },
+  mode: {
+    label: "Mode AI",
+    fast: "Cepat",
+    smart: "Teliti",
+    hint: "Teliti memakai model yang lebih kuat. Hasilnya lebih cermat, tetapi butuh waktu lebih lama.",
+  },
   kontrak: {
     title: "Cek kontrak kerja",
     intro: "Unggah kontrak kerja atau magang kamu. Setiap klausul ditandai beserta dasar hukumnya, jadi kamu tahu apa yang perlu ditanyakan sebelum tanda tangan.",
@@ -212,6 +218,12 @@ const en: Dict = {
   check: {
     errorNetwork: "Could not reach the server. Try again.",
     errorUnknown: "An error occurred. Try again.",
+  },
+  mode: {
+    label: "AI mode",
+    fast: "Fast",
+    smart: "Thorough",
+    hint: "Thorough uses a stronger model. It is more careful but takes longer.",
   },
   kontrak: {
     title: "Check a work contract",
