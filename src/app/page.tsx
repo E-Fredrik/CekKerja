@@ -1,69 +1,155 @@
-import Image from "next/image";
+"use client";
+
+import Link from "next/link";
+import { CountUp } from "@/components/landing/CountUp.tsx";
+import { TiltedCard } from "@/components/landing/TiltedCard.tsx";
+import { Finding } from "@/components/ui/Finding.tsx";
+import { SummaryPlate } from "@/components/ui/SummaryPlate.tsx";
+import { useLang } from "@/components/ui/lang.tsx";
+
+const PILL_PRIMARY =
+  "inline-flex items-center justify-center h-11 px-[22px] text-[16px] font-[650] rounded-full bg-sign-blue text-on-sign-blue hover:ring-4 hover:ring-brand-wash active:scale-[0.98] transition-all";
+const PILL_SECONDARY =
+  "inline-flex items-center justify-center h-11 px-[22px] text-[16px] font-[650] rounded-full bg-surface text-ink border-[1.5px] border-line-strong hover:bg-surface-2 active:scale-[0.98] transition-all";
+
+const SURFACE = "bg-surface rounded-lg shadow-(--shadow-surface) p-6 sm:p-8";
 
 export default function Home() {
+  const { t, lang } = useLang();
+  const l = t.landing;
+  const locale = lang === "id" ? "id-ID" : "en-US";
+
+  const red = (
+    <Finding
+      verdict="red"
+      code={l.demoRedCode}
+      title={l.demoRedTitle}
+      quote={l.demoRedQuote}
+      reason={l.demoRedReason}
+      legalBasis={l.demoRedBasis}
+      question={l.demoRedQuestion}
+    />
+  );
+
+  const steps = [
+    [l.howStep1Title, l.howStep1Desc],
+    [l.howStep2Title, l.howStep2Desc],
+    [l.howStep3Title, l.howStep3Desc],
+  ];
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert h-5 w-[100px]"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the{" "}
-            <code className="rounded bg-black/[.06] px-1.5 py-0.5 font-mono text-[0.9em] dark:bg-white/[.08]">
-              page.tsx
-            </code>{" "}
-            file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="mx-auto max-w-[76rem] px-4 sm:px-6 lg:px-8 py-12 flex flex-col gap-20 sm:gap-24">
+      <section className="grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+        <header className="flex flex-col gap-5 max-w-prose">
+          <h1 className="text-large-title text-ink">{l.title}</h1>
+          <p className="text-body text-ink-soft">{l.subtitle}</p>
+          <div className="flex flex-wrap items-center gap-3 pt-1">
+            <Link href="/kontrak" className={PILL_PRIMARY}>
+              {l.ctaContract}
+            </Link>
+            <Link href="/lowongan" className={PILL_SECONDARY}>
+              {l.ctaAd}
+            </Link>
+          </div>
+        </header>
+
+        <TiltedCard>
+          <div className="bg-surface rounded-lg shadow-(--shadow-surface) p-4 sm:p-6 flex flex-col gap-6">
+            <SummaryPlate headline={l.heroPlateHeadline} documentLabel={l.heroPlateLabel} red={1} yellow={1} green={1} />
+            {red}
+          </div>
+        </TiltedCard>
+      </section>
+
+      <section className="flex flex-col gap-6" aria-labelledby="demo-title">
+        <div className="flex flex-col gap-1 max-w-prose">
+          <h2 id="demo-title" className="text-title-1 text-ink">
+            {l.demoHeading}
+          </h2>
+          <p className="text-callout text-ink-soft">{l.demoSubheading}</p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert h-[14px] w-4"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+        <div className={SURFACE}>
+          {red}
+          <Finding
+            verdict="yellow"
+            code={l.demoYellowCode}
+            title={l.demoYellowTitle}
+            quote={l.demoYellowQuote}
+            reason={l.demoYellowReason}
+            legalBasis={l.demoYellowBasis}
+            question={l.demoYellowQuestion}
+          />
+          <Finding
+            verdict="green"
+            code={l.demoGreenCode}
+            title={l.demoGreenTitle}
+            quote={l.demoGreenQuote}
+            reason={l.demoGreenReason}
+            legalBasis={l.demoGreenBasis}
+          />
         </div>
-      </main>
+      </section>
+
+      <section className="flex flex-col gap-6" aria-labelledby="how-title">
+        <h2 id="how-title" className="text-title-1 text-ink">
+          {l.howHeading}
+        </h2>
+        <ol className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {steps.map(([title, desc]) => (
+            <li key={title} className={`${SURFACE} flex flex-col gap-2`}>
+              <h3 className="text-title-2 text-ink">{title}</h3>
+              <p className="text-body text-ink-soft">{desc}</p>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <section className={`${SURFACE} flex flex-col gap-6`} aria-labelledby="evidence-title">
+        <h2 id="evidence-title" className="text-title-1 text-ink">
+          {l.evidenceHeading}
+        </h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-8">
+          <div className="flex flex-col gap-2">
+            <span className="text-figure text-ink">
+              <CountUp to={66.3} decimals={1} suffix="%" locale={locale} />
+            </span>
+            <p className="text-callout text-ink-soft">{l.evidenceStat1Label}</p>
+          </div>
+          <div className="flex flex-col gap-2">
+            <span className="text-figure text-ink">
+              <CountUp to={38.8} decimals={1} suffix="%" locale={locale} />
+            </span>
+            <p className="text-callout text-ink-soft">{l.evidenceStat2Label}</p>
+          </div>
+        </div>
+        <p className="text-footnote text-ink-soft">{l.evidenceSource}</p>
+      </section>
+
+      <section className="flex flex-col gap-6" aria-labelledby="tools-title">
+        <h2 id="tools-title" className="text-title-1 text-ink">
+          {l.toolsHeading}
+        </h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className={`${SURFACE} flex flex-col gap-6 justify-between`}>
+            <div className="flex flex-col gap-3">
+              <h3 className="text-title-2 text-ink">{l.toolContractTitle}</h3>
+              <p className="text-body text-ink-soft">{l.toolContractDesc}</p>
+            </div>
+            <Link href="/kontrak" className={`${PILL_SECONDARY} self-start`}>
+              {l.ctaContract}
+            </Link>
+          </div>
+          <div className={`${SURFACE} flex flex-col gap-6 justify-between`}>
+            <div className="flex flex-col gap-3">
+              <h3 className="text-title-2 text-ink">{l.toolAdTitle}</h3>
+              <p className="text-body text-ink-soft">{l.toolAdDesc}</p>
+            </div>
+            <Link href="/lowongan" className={`${PILL_SECONDARY} self-start`}>
+              {l.ctaAd}
+            </Link>
+          </div>
+        </div>
+      </section>
     </div>
   );
 }
