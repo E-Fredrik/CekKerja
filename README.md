@@ -42,7 +42,7 @@ Status is updated with every feature pull request: Not started, In progress, Don
 - Contract check page ready: upload a contract, see a traffic-light summary and every clause with its quote, legal basis and a question to ask, ordered from most to least serious, then copy a ready-made message for HR.
 - Web mailer ready: emails contract, job ad, and interview prep findings to the user's own address with clean HTML formatting, escaped inputs, and plain-text fallback.
 - Job ad check page ready: paste a job ad or a link, see a traffic-light summary and every flagged requirement with the ad's exact words, its legal basis and a question to ask, then copy an inclusive version of the ad.
-- Landing page ready: responsive bilingual landing page with the Rambu sign verdict guide, tool entry cards, real labor statistics, and product principles.
+- Landing page ready: a bilingual landing page with a sample contract check that tilts in 3D, every verdict shown with its legal basis, how the check works, job ad statistics that count up with their source, and links to both tools.
 
 ## Tech stack
 
