@@ -110,6 +110,44 @@ const id = {
       other: "Perlu dicek",
     },
   },
+  landing: {
+    heroTagline: "Baca dulu sebelum tanda tangan.",
+    heroTitle: "Ketahui hak kerjamu sebelum sepakat.",
+    heroSubtitle:
+      "Periksa iklan lowongan kerja dan draf kontrak kerja kamu terhadap hukum ketenagakerjaan Indonesia. Temukan potensi pelanggaran, pelajari dasar hukumnya, dan siapkan pertanyaan untuk HR.",
+    ctaContract: "Periksa Kontrak",
+    ctaAd: "Periksa Lowongan",
+    verdictTitle: "Sistem Rambu Cek Kerja",
+    verdictDesc:
+      "Kami menyederhanakan aturan hukum yang rumit menjadi tiga tanda yang jelas dan mudah dipahami seketika.",
+    toolsTitle: "Alat Kami",
+    toolsSubtitle:
+      "Dirancang untuk mahasiswa dan lulusan baru yang sedang mencari kerja atau bersiap menandatangani kontrak pertama.",
+    toolKontrakTitle: "Cek Kontrak Kerja",
+    toolKontrakDesc:
+      "Unggah PDF atau foto kontrak. Setiap klausul dinilai dengan tanda rambu dan dasar hukum resmi, lengkap dengan saran pesan untuk HR.",
+    toolKontrakAction: "Cek Kontrak Sekarang",
+    toolLowonganTitle: "Cek Lowongan Kerja",
+    toolLowonganDesc:
+      "Tempel teks atau tautan iklan lowongan. Kenali syarat diskriminatif seperti batasan usia atau tahan ijazah, dan dapatkan draf versi inklusif.",
+    toolLowonganAction: "Cek Lowongan Sekarang",
+    toolInterviewTitle: "Latihan Wawancara",
+    toolInterviewDesc:
+      "Segera hadir. Dapatkan prediksi pertanyaan wawancara spesifik berdasarkan profilmu dan perusahaan yang kamu tuju.",
+    toolInterviewAction: "Segera Hadir",
+    evidenceTitle: "Mengapa Ini Penting?",
+    evidenceStat1Number: "66,3%",
+    evidenceStat1Label: "iklan lowongan daring mencantumkan batas usia diskriminatif (Ningrum et al., PLoS ONE, 2020).",
+    evidenceStat2Number: "Puluhan",
+    evidenceStat2Label: "kasus penahanan ijazah asli pekerja dilaporkan hingga akhirnya dilarang lewat Surat Edaran Kemnaker.",
+    principleTitle: "Prinsip Kami",
+    principle1Title: "Berdasarkan Hukum Resmi",
+    principle1Desc: "Setiap temuan merujuk langsung ke undang-undang dan peraturan ketenagakerjaan resmi Indonesia (UU 13/2003 dan regulasi turunan).",
+    principle2Title: "Bukan Nasihat Hukum",
+    principle2Desc: "Hasil analisis berupa indikasi pelanggaran untuk bahan pembelajaran dan pertimbangan kamu, bukan keputusan legal formal.",
+    principle3Title: "Privasi & Keamanan",
+    principle3Desc: "Dokumen yang kamu unggah diproses secara aman dan tidak dibagikan kepada pihak perekrut atau pihak ketiga mana pun.",
+  },
 } as const;
 
 export type Dict = DictShape<typeof id>;
@@ -213,6 +251,44 @@ const en: Dict = {
       "marriage-pregnancy": "Marriage or pregnancy",
       other: "Needs checking",
     },
+  },
+  landing: {
+    heroTagline: "Read it before you sign it.",
+    heroTitle: "Know your labor rights before you agree.",
+    heroSubtitle:
+      "Check job advertisements and contract drafts against Indonesian labor law. Detect potential violations, review cited legal bases, and prepare questions for HR.",
+    ctaContract: "Check Contract",
+    ctaAd: "Check Job Ad",
+    verdictTitle: "The Cek Kerja Sign System",
+    verdictDesc:
+      "We turn complex labor regulations into three clear, instant signs inspired by road signs.",
+    toolsTitle: "Our Tools",
+    toolsSubtitle:
+      "Built for Indonesian students and fresh graduates seeking work or preparing to sign their first contract.",
+    toolKontrakTitle: "Contract Check",
+    toolKontrakDesc:
+      "Upload a PDF or contract photo. Each clause is marked with road signs and official legal sources, complete with draft negotiation messages for HR.",
+    toolKontrakAction: "Check Contract Now",
+    toolLowonganTitle: "Job Ad Check",
+    toolLowonganDesc:
+      "Paste the ad text or link. Detect discriminatory requirements such as age caps or diploma withholding, and get an inclusive rewrite.",
+    toolLowonganAction: "Check Job Ad Now",
+    toolInterviewTitle: "Interview Prep",
+    toolInterviewDesc:
+      "Coming soon. Get tailored interview questions gathered from public sources matching your profile and targeted role.",
+    toolInterviewAction: "Coming Soon",
+    evidenceTitle: "Why This Matters",
+    evidenceStat1Number: "66.3%",
+    evidenceStat1Label: "of online job ads set discriminatory age limits (Ningrum et al., PLoS ONE, 2020).",
+    evidenceStat2Number: "Dozens",
+    evidenceStat2Label: "of diploma-withholding reports led to a Ministry of Manpower circular banning the practice.",
+    principleTitle: "Our Principles",
+    principle1Title: "Grounded in Official Law",
+    principle1Desc: "Every finding directly cites Indonesian labor laws and regulations (UU 13/2003 and related rules).",
+    principle2Title: "Flag, Don't Rule",
+    principle2Desc: "Findings are possible violations for learning and negotiation, never formal legal verdicts.",
+    principle3Title: "Privacy & Protection",
+    principle3Desc: "Uploaded documents are processed securely and never shared with employers or any third parties.",
   },
 };
 
