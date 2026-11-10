@@ -43,6 +43,7 @@ Status is updated with every feature pull request: Not started, In progress, Don
 - Web mailer ready: emails contract, job ad, and interview prep findings to the user's own address with clean HTML formatting, escaped inputs, and plain-text fallback.
 - Job ad check page ready: paste a job ad or a link, see a traffic-light summary and every flagged requirement with the ad's exact words, its legal basis and a question to ask, then copy an inclusive version of the ad.
 - Landing page ready: a bilingual landing page with a 3D traffic light that turns and lights red, yellow and green as you scroll, a sample contract check with every verdict and its legal basis, how the check works, job ad statistics that count up with their source, and links to both tools. Across the site, the top bar hides while you scroll down and a bracket cursor marks what you are about to click.
+- Landing page hero improved: the traffic light is now modelled with recessed lenses, hoods and a soft glow, and as each lamp lights up the hero explains what that sign means, next to a note that every flag cites its source and is not legal advice.
 
 ## Tech stack
 
