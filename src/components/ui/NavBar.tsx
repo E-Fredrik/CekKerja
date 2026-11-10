@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion, useMotionValueEvent, useReducedMotion, useScroll } from "motion/react";
+import { useState } from "react";
 import { useLang } from "@/components/ui/lang.tsx";
 import { Segmented } from "@/components/ui/Segmented.tsx";
 import type { Lang } from "@/lib/i18n.ts";
@@ -25,6 +27,13 @@ function LogoMark() {
 
 export function NavBar() {
   const { lang, t, setLang } = useLang();
+  const { scrollY } = useScroll();
+  const reduceMotion = useReducedMotion();
+  const [hidden, setHidden] = useState(false);
+
+  useMotionValueEvent(scrollY, "change", (y) => {
+    setHidden(y > 80 && y > (scrollY.getPrevious() ?? 0));
+  });
   const pathname = usePathname();
 
   const links = [
@@ -39,7 +48,12 @@ export function NavBar() {
   ];
 
   return (
-    <header className="bg-shell sticky top-0 z-40 w-full">
+    <motion.header
+      className="bg-shell sticky top-0 z-40 w-full"
+      animate={{ y: hidden ? "-100%" : "0%" }}
+      transition={{ duration: reduceMotion ? 0 : 0.28, ease: [0.16, 1, 0.3, 1] }}
+      onFocusCapture={() => setHidden(false)}
+    >
       <div className="mx-auto max-w-[76rem] px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between gap-4">
           <Link
@@ -123,6 +137,6 @@ export function NavBar() {
           })}
         </div>
       </div>
-    </header>
+    </motion.header>
   );
 }
