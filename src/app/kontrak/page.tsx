@@ -3,10 +3,12 @@
 import { useState, type FormEvent } from "react";
 import type { CheckedClause, ContractCheck } from "@/lib/ai/analyze.ts";
 import type { Verdict } from "@/lib/ai/schemas.ts";
+import type { Mode } from "@/lib/ai/gemini.ts";
 import { Button } from "@/components/ui/Button.tsx";
 import { FileDrop } from "@/components/ui/FileDrop.tsx";
 import { Finding } from "@/components/ui/Finding.tsx";
 import { Notice } from "@/components/ui/Notice.tsx";
+import { Segmented } from "@/components/ui/Segmented.tsx";
 import { SummaryPlate } from "@/components/ui/SummaryPlate.tsx";
 import { useLang } from "@/components/ui/lang.tsx";
 import { useCheck } from "@/components/ui/useCheck.ts";
@@ -19,6 +21,7 @@ export default function KontrakPage() {
   const { t, lang } = useLang();
   const { state, run, reset } = useCheck<ContractCheck>("/api/check-contract");
   const [file, setFile] = useState<File | null>(null);
+  const [mode, setMode] = useState<Mode>("fast");
 
   function submit(e: FormEvent) {
     e.preventDefault();
@@ -26,7 +29,7 @@ export default function KontrakPage() {
     const form = new FormData();
     form.append("file", file);
     form.append("lang", lang);
-    form.append("mode", "fast");
+    form.append("mode", mode);
     run(form);
   }
 
@@ -48,6 +51,21 @@ export default function KontrakPage() {
         <form onSubmit={submit} className={`${SURFACE} flex flex-col gap-4 max-w-2xl`}>
           <p className="text-[16px] font-[600] text-ink">{t.kontrak.upload}</p>
           <FileDrop onFile={setFile} disabled={state.status === "pending"} />
+          <div className="flex flex-col gap-1.5">
+            <p className="text-[16px] font-[600] text-ink">{t.mode.label}</p>
+            <div>
+              <Segmented
+                label={t.mode.label}
+                value={mode}
+                onChange={setMode}
+                options={[
+                  { value: "fast", label: t.mode.fast },
+                  { value: "smart", label: t.mode.smart },
+                ]}
+              />
+            </div>
+            <p className="text-callout text-ink-soft">{t.mode.hint}</p>
+          </div>
           {state.status === "error" && <Notice variant="error">{state.message}</Notice>}
           <div>
             <Button type="submit" disabled={!file} pending={state.status === "pending"}>
