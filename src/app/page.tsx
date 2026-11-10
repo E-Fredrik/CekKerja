@@ -2,10 +2,12 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useMotionValue, useReducedMotion, useScroll } from "motion/react";
-import { useRef } from "react";
+import { useMotionValue, useMotionValueEvent, useReducedMotion, useScroll } from "motion/react";
+import { useRef, useState } from "react";
 import { CountUp } from "@/components/landing/CountUp.tsx";
+import { SIGNAL_ORDER, litLamp } from "@/components/landing/signal.ts";
 import { TiltedCard } from "@/components/landing/TiltedCard.tsx";
+import { VerdictLegend } from "@/components/landing/VerdictLegend.tsx";
 import { Finding } from "@/components/ui/Finding.tsx";
 import { SummaryPlate } from "@/components/ui/SummaryPlate.tsx";
 import { useLang } from "@/components/ui/lang.tsx";
@@ -29,6 +31,9 @@ export default function Home() {
   const { scrollYProgress } = useScroll({ target: hero, offset: ["start start", "end end"] });
   const still = useMotionValue(0);
   const reduceMotion = useReducedMotion();
+  const [lit, setLit] = useState<0 | 1 | 2>(0);
+  useMotionValueEvent(scrollYProgress, "change", (p) => setLit(litLamp(p)));
+  const activeVerdict = reduceMotion ? null : SIGNAL_ORDER[lit];
 
   const steps = [
     [l.howStep1Title, l.howStep1Desc],
@@ -38,10 +43,10 @@ export default function Home() {
 
   return (
     <div className="mx-auto max-w-[76rem] px-4 sm:px-6 lg:px-8 py-12 flex flex-col gap-20 sm:gap-24">
-      <section ref={hero} className="relative h-[200svh] -mt-12">
-        <div className="sticky top-0 h-svh grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-10 content-center items-center">
-          <header className="flex flex-col gap-5 max-w-prose">
-            <h1 className="text-large-title text-ink">{l.title}</h1>
+      <section ref={hero} className="relative lg:h-[200svh] lg:-mt-12">
+        <div className="lg:sticky lg:top-0 lg:h-svh grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_minmax(0,0.85fr)] gap-8 lg:gap-12 content-center items-center">
+          <header className="flex flex-col gap-5 max-w-[34rem]">
+            <h1 className="text-large-title text-ink text-balance">{l.title}</h1>
             <p className="text-body text-ink-soft">{l.subtitle}</p>
             <div className="flex flex-wrap items-center gap-3 pt-1">
               <Link href="/kontrak" className={PILL_PRIMARY}>
@@ -51,9 +56,13 @@ export default function Home() {
                 {l.ctaAd}
               </Link>
             </div>
+            <div className="flex flex-col gap-4 pt-5 mt-2 border-t border-line">
+              <VerdictLegend active={activeVerdict} />
+              <p className="text-footnote text-ink-soft">{l.trustNote}</p>
+            </div>
           </header>
 
-          <div className="h-[300px] sm:h-[420px] lg:h-[540px]" aria-hidden="true">
+          <div className="h-[200px] sm:h-[420px] lg:h-[min(640px,82svh)] -order-1 lg:order-none" aria-hidden="true">
             <TrafficLight3D progress={reduceMotion ? still : scrollYProgress} />
           </div>
         </div>
