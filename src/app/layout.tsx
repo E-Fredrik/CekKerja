@@ -4,6 +4,7 @@ import "./globals.css";
 import { LangProvider } from "@/components/ui/lang.tsx";
 import { NavBar } from "@/components/ui/NavBar.tsx";
 import Footer from "@/components/ui/Footer.tsx";
+import { TargetCursor } from "@/components/ui/TargetCursor.tsx";
 
 const overpass = Overpass({
   variable: "--font-ui",
@@ -25,6 +26,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
           <NavBar />
           <main className="flex-1">{children}</main>
           <Footer />
+          <TargetCursor />
         </LangProvider>
       </body>
     </html>
