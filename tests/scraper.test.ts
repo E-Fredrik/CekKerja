@@ -5,6 +5,7 @@ import { assertPublicHost, checkUrl, isBlockedAddress } from "../src/lib/scraper
 import { extractQuestions, htmlToText } from "../src/lib/scraper/extract.ts";
 import { isAllowedByRobots, matchesPattern } from "../src/lib/scraper/robots.ts";
 import { USER_AGENT, fetchPage, type Fetcher } from "../src/lib/scraper/fetch-page.ts";
+import { MAX_PUBLIC_PAGES, collectInterviewSources, companyLinks, isForbiddenSite } from "../src/lib/scraper/interview-sources.ts";
 import { MAX_AD_CHARS, analyzeAd, keepGroundedFlags, parseAdRequest, readAd } from "../src/app/api/check-ad/analyze-ad.ts";
 import { BadRequest } from "../src/lib/http.ts";
 import type { generateJson } from "../src/lib/ai/gemini.ts";
@@ -404,4 +405,66 @@ test("keepGroundedFlags drops minimum wage flags because only code may judge wag
   const ad = `${AD} Gaji Rp2.000.000 per bulan.`;
   const kept = keepGroundedFlags([flag("Gaji Rp2.000.000 per bulan", "minimum-wage"), flag("Wanita", "equal-opportunity")], ad);
   assert.deepEqual(kept.map((f) => f.ruleId), ["equal-opportunity"]);
+});
+
+const page = (url: string, text: string, html = "") => ({ url, contentType: "text/html", html, text });
+
+test("isForbiddenSite blocks sites whose terms forbid scraping and allows others", () => {
+  for (const url of ["https://www.glassdoor.co.id/x", "https://id.linkedin.com/jobs", "https://id.indeed.com/", "https://x.com/a", "https://m.facebook.com/", "https://www.reddit.com/r/x", "not a url"]) {
+    assert.ok(isForbiddenSite(url), url);
+  }
+  for (const url of ["https://glints.com/id/lowongan/tips", "https://www.kalibrr.com/blog", "https://box.example.co.id/"]) {
+    assert.ok(!isForbiddenSite(url), url);
+  }
+});
+
+test("companyLinks keeps same-site about, career and FAQ links only", () => {
+  const html = `<a href="/tentang-kami">Tentang</a><a href="https://www.pt.example.com/karir#top">Karir</a><a href="/produk">Produk</a>
+    <a href="https://other.example.com/about">About</a><a href="mailto:hr@pt.example.com">Mail</a><a href="/faq">FAQ</a><a href="/careers/interview">Interview</a>`;
+  assert.deepEqual(companyLinks(page("https://pt.example.com/", "", html)), [
+    "https://pt.example.com/tentang-kami",
+    "https://www.pt.example.com/karir",
+    "https://pt.example.com/faq",
+  ]);
+});
+
+test("collectInterviewSources reads the job ad, company pages and suggested pages with their sources", async () => {
+  const pages: Record<string, ReturnType<typeof page>> = {
+    "https://jobs.example.com/1": page("https://jobs.example.com/1", "Staf admin.\nApa pengalaman kamu dengan Excel?"),
+    "https://pt.example.com/": page("https://pt.example.com/", "PT Example membuat kopi.", '<a href="/karir">Karir</a>'),
+    "https://pt.example.com/karir": page("https://pt.example.com/karir", "Kenapa kamu ingin bergabung dengan kami?"),
+    "https://blog.example.com/admin": page("https://blog.example.com/admin", "1. Ceritakan tentang diri kamu?\n2. Apa pengalaman kamu dengan Excel?"),
+  };
+  const fetched: string[] = [];
+  const fetch = async (url: string) => {
+    fetched.push(url);
+    if (!pages[url]) throw new ScrapeError("http_error", "The page answered with status 404");
+    return pages[url];
+  };
+  const suggest = async () => ["https://blog.example.com/admin", "https://www.glassdoor.com/Interview/x", "https://gone.example.com/", "https://pt.example.com/karir"];
+  const out = await collectInterviewSources({ role: "Admin", company: "PT Example", jobUrl: "https://jobs.example.com/1", companyUrl: "https://pt.example.com/" }, { fetch, suggest });
+
+  assert.deepEqual(out.questions, [
+    { question: "Apa pengalaman kamu dengan Excel?", source: "https://jobs.example.com/1" },
+    { question: "Kenapa kamu ingin bergabung dengan kami?", source: "https://pt.example.com/karir" },
+    { question: "Ceritakan tentang diri kamu?", source: "https://blog.example.com/admin" },
+  ]);
+  assert.match(out.jobText, /Staf admin/);
+  assert.match(out.companyText, /membuat kopi[\s\S]*bergabung/);
+  assert.ok(!fetched.some((u) => u.includes("glassdoor")));
+  assert.equal(fetched.filter((u) => u === "https://pt.example.com/karir").length, 1);
+  assert.deepEqual(out.failed.map((f) => f.url).sort(), ["https://gone.example.com/", "https://www.glassdoor.com/Interview/x"]);
+});
+
+test("collectInterviewSources still returns results when the suggester fails and caps public pages", async () => {
+  const fetched: string[] = [];
+  const fetch = async (url: string) => (fetched.push(url), page(url, "Apa kelebihan kamu sebagai admin?"));
+  const failing = await collectInterviewSources({ role: "Admin", jobUrl: "https://jobs.example.com/1" }, { fetch, suggest: async () => Promise.reject(new Error("busy")) });
+  assert.equal(failing.questions.length, 1);
+  assert.deepEqual(failing.failed, [{ url: "search", reason: "busy" }]);
+
+  fetched.length = 0;
+  const many = Array.from({ length: 9 }, (_, i) => `https://blog${i}.example.com/`);
+  await collectInterviewSources({ role: "Admin" }, { fetch, suggest: async () => many });
+  assert.equal(fetched.length, MAX_PUBLIC_PAGES);
 });
