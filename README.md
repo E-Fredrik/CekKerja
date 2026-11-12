@@ -46,6 +46,7 @@ Status is updated with every feature pull request: Not started, In progress, Don
 - Interview question sources ready: the job ad, the company's own about and career pages, and public interview question pages are read safely, skipping sites that forbid automated reading (Glassdoor, LinkedIn, Indeed, social media), and every question keeps a link to where it was found.
 - Landing page hero improved: the traffic light is now modelled with recessed lenses and hoods, and as each lamp lights up the hero explains what that sign means, next to a note that every flag cites its source and is not legal advice.
 - Sign in and sign up pages ready: bilingual forms that check the name, email, password length and consent before sending, point to the first field that needs fixing, and are reachable from a Sign in button in the top bar. Accounts themselves come in a later step.
+- Demo sign-in added: signing up (with a repeated password) or signing in keeps only your name and email in this browser, never the password, and the top bar shows the three checks and a Sign out button only while you are signed in. Real accounts replace this in a later step.
 - AI mode choice: the contract check has a Cepat / Teliti (fast / thorough) switch; Teliti uses a stronger Gemini model and falls back to the fast model automatically when it is busy.
 
 ## Tech stack
