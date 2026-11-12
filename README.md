@@ -23,7 +23,7 @@ Status is updated with every feature pull request: Not started, In progress, Don
 | Latihan interview (interview prep) | Reads the job ad, the company site and public interview question pages, then tailors questions to the candidate's profile and CV. | In progress |
 | Bilingual interface | Every page in Bahasa Indonesia and English, with a language toggle. | In progress |
 | Web mailer | Emails a result to the user's own address. | In progress |
-| Accounts and history | Sign up, log in, and see past checks. | Not started |
+| Accounts and history | Sign up, log in, and see past checks. | In progress |
 | Premium | Free plan with monthly limits; Premium through Midtrans. | Not started |
 
 ## Progress so far
@@ -45,6 +45,7 @@ Status is updated with every feature pull request: Not started, In progress, Don
 - Landing page ready: a bilingual landing page with a 3D traffic light that turns and lights red, yellow and green as you scroll, a sample contract check with every verdict and its legal basis, how the check works, job ad statistics that count up with their source, and links to both tools. Across the site, the top bar hides while you scroll down and a bracket cursor marks what you are about to click.
 - Interview question sources ready: the job ad, the company's own about and career pages, and public interview question pages are read safely, skipping sites that forbid automated reading (Glassdoor, LinkedIn, Indeed, social media), and every question keeps a link to where it was found.
 - Landing page hero improved: the traffic light is now modelled with recessed lenses and hoods, and as each lamp lights up the hero explains what that sign means, next to a note that every flag cites its source and is not legal advice.
+- Sign in and sign up pages ready: bilingual forms that check the name, email, password length and consent before sending, point to the first field that needs fixing, and are reachable from a Sign in button in the top bar. Accounts themselves come in a later step.
 - AI mode choice: the contract check has a Cepat / Teliti (fast / thorough) switch; Teliti uses a stronger Gemini model and falls back to the fast model automatically when it is busy.
 
 ## Tech stack
