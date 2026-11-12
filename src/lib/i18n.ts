@@ -50,7 +50,6 @@ const id = {
     signup: "Daftar",
     noAccount: "Belum punya akun?",
     haveAccount: "Sudah punya akun?",
-    demoNote: "Ini login percobaan sampai akun sungguhan aktif. Hanya nama dan email kamu yang disimpan, di browser ini saja. Kata sandi tidak disimpan.",
     errors: {
       nameRequired: "Tulis nama kamu.",
       emailInvalid: "Tulis alamat email yang benar, misalnya nama@email.com.",
@@ -237,7 +236,6 @@ const en: Dict = {
     signup: "Sign up",
     noAccount: "No account yet?",
     haveAccount: "Already have an account?",
-    demoNote: "This is a demo sign-in until real accounts are ready. Only your name and email are kept, in this browser only. Your password is never stored.",
     errors: {
       nameRequired: "Enter your name.",
       emailInvalid: "Enter a valid email address, for example name@email.com.",

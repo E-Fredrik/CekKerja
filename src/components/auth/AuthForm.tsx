@@ -6,7 +6,6 @@ import { useId, useRef, useState, type FormEvent } from "react";
 import { useSession } from "@/components/auth/session.tsx";
 import { Button } from "@/components/ui/Button.tsx";
 import { Field } from "@/components/ui/Field.tsx";
-import { Notice } from "@/components/ui/Notice.tsx";
 import { useLang } from "@/components/ui/lang.tsx";
 import { userFromInput } from "@/lib/auth/session-user.ts";
 import { validateAuth, type AuthErrors, type AuthInput, type AuthMode } from "@/lib/auth/validate.ts";
@@ -119,8 +118,6 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
           )}
         </div>
       )}
-
-      <Notice variant="info">{a.demoNote}</Notice>
 
       <Button type="submit" className="w-full mt-2">
         {signup ? a.signup : a.login}
