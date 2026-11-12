@@ -235,3 +235,119 @@ test("sendMail formats options and passes them to transport sendMail", async () 
     if (origFrom) process.env.MAIL_FROM = origFrom; else delete process.env.MAIL_FROM;
   }
 });
+
+const contractRequest = {
+  kind: "contract",
+  to: "kenneth@example.com",
+  lang: "id",
+  result: {
+    contractType: "PKWT",
+    summary: "Ringkasan <script>alert(1)</script>",
+    clauses: [
+      { title: "Masa percobaan", text: "Masa percobaan 3 bulan.", verdict: "red", ruleId: "pkwt-probation", explanation: "PKWT tidak boleh ada masa percobaan.", source: "UU 13/2003 Pasal 58", questionToAsk: "Bisa dihapus?" },
+    ],
+    negotiationMessage: "Halo HR",
+    numberChecks: [{ ignored: true }],
+  },
+};
+
+const adRequest = {
+  kind: "ad",
+  to: "kenneth@example.com",
+  lang: "en",
+  result: {
+    role: "Admin",
+    company: "PT Contoh",
+    summary: "Summary",
+    flags: [{ quote: "Max age 25", verdict: "red", ruleId: "age-limit", explanation: "Age limits may discriminate.", source: null, questionToAsk: "Why the age limit?" }],
+    inclusiveRewrite: "Open to all ages",
+  },
+};
+
+test("EmailRequest accepts contract and job ad results and strips extra fields", async () => {
+  const { EmailRequest } = await import("../src/lib/mail/email-request.ts");
+  const contract = EmailRequest.parse(contractRequest);
+  assert.equal(contract.kind, "contract");
+  assert.equal("numberChecks" in contract.result, false);
+  assert.equal(EmailRequest.parse(adRequest).kind, "ad");
+});
+
+test("EmailRequest rejects bad addresses, unknown kinds, header line breaks and oversized lists", async () => {
+  const { EmailRequest, MAX_ITEMS } = await import("../src/lib/mail/email-request.ts");
+  for (const to of ["", "abc", "a@b", "a b@c.com", `${"x".repeat(250)}@example.com`]) {
+    assert.equal(EmailRequest.safeParse({ ...contractRequest, to }).success, false, to);
+  }
+  assert.equal(EmailRequest.safeParse({ ...contractRequest, kind: "interview" }).success, false);
+  assert.equal(EmailRequest.safeParse({ ...contractRequest, lang: "fr" }).success, false);
+  const injected = { ...contractRequest, result: { ...contractRequest.result, contractType: "PKWT\r\nBcc: victim@example.com" } };
+  assert.equal(EmailRequest.safeParse(injected).success, false);
+  const tooMany = { ...adRequest, result: { ...adRequest.result, flags: Array(MAX_ITEMS + 1).fill(adRequest.result.flags[0]) } };
+  assert.equal(EmailRequest.safeParse(tooMany).success, false);
+  assert.equal(EmailRequest.safeParse({ ...adRequest, result: { ...adRequest.result, flags: [] } }).success, true);
+});
+
+test("buildEmail sends only to the requested address and escapes HTML from the result", async () => {
+  const { EmailRequest, buildEmail } = await import("../src/lib/mail/email-request.ts");
+  const { to, mail } = buildEmail(EmailRequest.parse({ ...contractRequest, to: "  kenneth@example.com " }));
+  assert.equal(to, "kenneth@example.com");
+  assert.doesNotMatch(mail.html, /<script>/);
+  assert.match(mail.html, /&lt;script&gt;/);
+});
+
+test("createRateLimiter allows up to the limit per key and resets after the window", async () => {
+  const { createRateLimiter } = await import("../src/lib/mail/email-request.ts");
+  const allow = createRateLimiter(2, 1000);
+  assert.equal(allow("a", 0), true);
+  assert.equal(allow("a", 10), true);
+  assert.equal(allow("a", 20), false);
+  assert.equal(allow("b", 20), true);
+  assert.equal(allow("a", 1001), true);
+});
+
+test("email-result route rejects bad input and reports when SMTP is not set up", async () => {
+  const saved = { host: process.env.SMTP_HOST, user: process.env.SMTP_USER, pass: process.env.SMTP_PASS };
+  delete process.env.SMTP_HOST;
+  delete process.env.SMTP_USER;
+  delete process.env.SMTP_PASS;
+  const quiet = console.error;
+  console.error = () => {};
+  try {
+    const { POST } = await import("../src/app/api/email-result/route.ts");
+    const call = async (body: string, ip: string) => {
+      const res = await POST(new Request("http://x/api/email-result", { method: "POST", body, headers: { "x-forwarded-for": ip } }));
+      return { status: res.status, body: await res.json() };
+    };
+    assert.deepEqual(await call("not json", "1.1.1.1"), { status: 400, body: { error: "invalid" } });
+    assert.deepEqual(await call(JSON.stringify({ ...contractRequest, to: "nope" }), "1.1.1.2"), { status: 400, body: { error: "emailInvalid" } });
+    assert.deepEqual(await call(JSON.stringify(contractRequest), "1.1.1.3"), { status: 503, body: { error: "notConfigured" } });
+    assert.deepEqual(await call("x".repeat(256 * 1024 + 1), "1.1.1.4"), { status: 413, body: { error: "tooLarge" } });
+    for (let i = 0; i < 5; i++) await call("not json", "9.9.9.9");
+    assert.deepEqual(await call(JSON.stringify(contractRequest), "9.9.9.9"), { status: 429, body: { error: "rateLimited" } });
+  } finally {
+    console.error = quiet;
+    if (saved.host) process.env.SMTP_HOST = saved.host;
+    if (saved.user) process.env.SMTP_USER = saved.user;
+    if (saved.pass) process.env.SMTP_PASS = saved.pass;
+  }
+});
+
+test("email-result route limits by the real client address and by recipient", async () => {
+  const saved = { host: process.env.SMTP_HOST, user: process.env.SMTP_USER, pass: process.env.SMTP_PASS };
+  delete process.env.SMTP_HOST;
+  delete process.env.SMTP_USER;
+  delete process.env.SMTP_PASS;
+  try {
+    const { POST } = await import("../src/app/api/email-result/route.ts");
+    const call = async (body: string, headers: Record<string, string>) =>
+      (await POST(new Request("http://x/api/email-result", { method: "POST", body, headers }))).status;
+    for (let i = 0; i < 5; i++) await call("not json", { "x-real-ip": "7.7.7.7", "x-forwarded-for": `10.0.0.${i}` });
+    assert.equal(await call("not json", { "x-real-ip": "7.7.7.7", "x-forwarded-for": "10.0.0.99" }), 429);
+    const toOther = JSON.stringify({ ...contractRequest, to: "limit-test@example.com" });
+    for (let i = 0; i < 3; i++) assert.equal(await call(toOther, { "x-real-ip": `8.8.8.${i}` }), 503);
+    assert.equal(await call(toOther, { "x-real-ip": "8.8.8.9" }), 429);
+  } finally {
+    if (saved.host) process.env.SMTP_HOST = saved.host;
+    if (saved.user) process.env.SMTP_USER = saved.user;
+    if (saved.pass) process.env.SMTP_PASS = saved.pass;
+  }
+});

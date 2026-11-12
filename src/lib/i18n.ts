@@ -35,6 +35,22 @@ const id = {
   field: {
     required: "Wajib diisi",
   },
+  emailResult: {
+    label: "Kirim hasil ke email kamu",
+    hint: "Kami hanya mengirim ke alamat yang kamu tulis di sini, tidak ke perusahaan atau orang lain.",
+    send: "Kirim ke email",
+    sending: "Mengirim...",
+    sent: "Hasil sudah dikirim ke {email}. Cek juga folder spam.",
+    errors: {
+      emailInvalid: "Tulis alamat email yang benar, misalnya nama@email.com.",
+      rateLimited: "Terlalu banyak email dalam waktu singkat. Coba lagi beberapa menit lagi.",
+      notConfigured: "Pengiriman email belum diatur di server ini. Hasilnya tetap bisa kamu salin dari halaman ini.",
+      sendFailed: "Email gagal dikirim. Coba lagi sebentar lagi.",
+      tooLarge: "Hasil ini terlalu besar untuk dikirim lewat email.",
+      invalid: "Hasil ini tidak bisa dikirim. Coba periksa ulang dokumennya.",
+      network: "Tidak dapat menghubungi server. Coba lagi.",
+    },
+  },
   auth: {
     loginTitle: "Masuk ke Cek Kerja",
     loginLead: "Masuk untuk melihat riwayat pemeriksaan kamu dan mengirim hasil ke email.",
@@ -220,6 +236,22 @@ const en: Dict = {
   },
   field: {
     required: "Required",
+  },
+  emailResult: {
+    label: "Email this result to yourself",
+    hint: "We only send to the address you type here, never to an employer or anyone else.",
+    send: "Send to email",
+    sending: "Sending...",
+    sent: "The result was sent to {email}. Check your spam folder too.",
+    errors: {
+      emailInvalid: "Enter a valid email address, for example name@email.com.",
+      rateLimited: "Too many emails in a short time. Try again in a few minutes.",
+      notConfigured: "Email is not set up on this server yet. You can still copy the result from this page.",
+      sendFailed: "The email could not be sent. Try again shortly.",
+      tooLarge: "This result is too large to send by email.",
+      invalid: "This result cannot be sent. Try checking the document again.",
+      network: "Could not reach the server. Try again.",
+    },
   },
   auth: {
     loginTitle: "Sign in to Cek Kerja",
