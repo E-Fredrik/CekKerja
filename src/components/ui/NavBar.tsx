@@ -4,9 +4,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { motion, useMotionValueEvent, useReducedMotion, useScroll } from "motion/react";
 import { useState } from "react";
+import { useSession } from "@/components/auth/session.tsx";
 import { useLang } from "@/components/ui/lang.tsx";
 import { Segmented } from "@/components/ui/Segmented.tsx";
 import type { Lang } from "@/lib/i18n.ts";
+
+const ACCOUNT_BUTTON =
+  "inline-flex items-center h-9 px-4 rounded-full bg-on-shell text-shell text-[14px] font-[650] leading-none whitespace-nowrap cursor-pointer hover:bg-on-shell/90 active:scale-[0.98] transition-all focus-visible:outline-3 focus-visible:outline-on-shell focus-visible:outline-offset-2";
 
 function LogoMark() {
   return (
@@ -35,12 +39,15 @@ export function NavBar() {
     setHidden(y > 80 && y > (scrollY.getPrevious() ?? 0));
   });
   const pathname = usePathname();
+  const { user, signOut } = useSession();
 
-  const links = [
-    { href: "/lowongan", label: t.nav.lowongan },
-    { href: "/kontrak", label: t.nav.kontrak },
-    { href: "/interview", label: t.nav.interview },
-  ];
+  const links = user
+    ? [
+        { href: "/lowongan", label: t.nav.lowongan },
+        { href: "/kontrak", label: t.nav.kontrak },
+        { href: "/interview", label: t.nav.interview },
+      ]
+    : [];
 
   const langOptions = [
     { value: "id" as Lang, label: t.lang.id },
@@ -62,7 +69,7 @@ export function NavBar() {
             aria-label={t.nav.brand}
           >
             <LogoMark />
-            <span className="text-on-shell text-[19px] font-[800] leading-none tracking-tight">
+            <span className="hidden min-[420px]:inline text-on-shell text-[19px] font-[800] leading-none tracking-tight">
               {t.nav.brand}
             </span>
           </Link>
@@ -105,17 +112,33 @@ export function NavBar() {
               inverse
               label="Pilih bahasa / Choose language"
             />
-            <Link
-              href="/masuk"
-              aria-current={pathname === "/masuk" ? "page" : undefined}
-              className="inline-flex items-center h-9 px-4 rounded-full bg-on-shell text-shell text-[14px] font-[650] leading-none hover:bg-on-shell/90 active:scale-[0.98] transition-all focus-visible:outline-3 focus-visible:outline-on-shell focus-visible:outline-offset-2"
-            >
-              {t.nav.masuk}
-            </Link>
+            {user ? (
+              <button type="button" onClick={signOut} className={ACCOUNT_BUTTON}>
+                {t.nav.keluar}
+              </button>
+            ) : (
+              <>
+                <Link
+                  href="/masuk"
+                  aria-current={pathname === "/masuk" ? "page" : undefined}
+                  className="inline-flex items-center h-9 px-2.5 rounded-full text-on-shell-soft hover:text-on-shell text-[14px] font-[650] leading-none transition-colors focus-visible:outline-3 focus-visible:outline-on-shell focus-visible:outline-offset-2"
+                >
+                  {t.nav.masuk}
+                </Link>
+                <Link
+                  href="/daftar"
+                  aria-current={pathname === "/daftar" ? "page" : undefined}
+                  className={ACCOUNT_BUTTON}
+                >
+                  {t.nav.daftar}
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>
 
+      {links.length > 0 && (
       <div className="min-[720px]:hidden border-t border-on-shell/10 overflow-x-auto">
         <div className="flex items-center gap-1 px-4 py-1.5 w-max">
           {links.map(({ href, label }) => {
@@ -144,6 +167,7 @@ export function NavBar() {
           })}
         </div>
       </div>
+      )}
     </motion.header>
   );
 }

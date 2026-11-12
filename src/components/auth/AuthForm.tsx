@@ -1,45 +1,47 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useId, useRef, useState, type FormEvent } from "react";
+import { useSession } from "@/components/auth/session.tsx";
 import { Button } from "@/components/ui/Button.tsx";
 import { Field } from "@/components/ui/Field.tsx";
 import { Notice } from "@/components/ui/Notice.tsx";
 import { useLang } from "@/components/ui/lang.tsx";
+import { userFromInput } from "@/lib/auth/session-user.ts";
 import { validateAuth, type AuthErrors, type AuthInput, type AuthMode } from "@/lib/auth/validate.ts";
 
 const SURFACE = "bg-surface rounded-lg shadow-(--shadow-surface) p-6 sm:p-8";
 
-const EMPTY: AuthInput = { name: "", email: "", password: "", consent: false };
+const EMPTY: AuthInput = { name: "", email: "", password: "", confirmPassword: "", consent: false };
 
 export function AuthForm({ mode }: { mode: AuthMode }) {
   const { t } = useLang();
+  const { signIn } = useSession();
+  const router = useRouter();
   const a = t.auth;
   const signup = mode === "signup";
   const consentId = useId();
   const formRef = useRef<HTMLFormElement>(null);
   const [input, setInput] = useState<AuthInput>(EMPTY);
   const [tried, setTried] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
 
   const errors: AuthErrors = tried ? validateAuth(mode, input) : {};
   const message = (key: keyof AuthInput) => (errors[key] ? a.errors[errors[key]] : undefined);
 
   function update<K extends keyof AuthInput>(key: K, value: AuthInput[K]) {
     setInput((current) => ({ ...current, [key]: value }));
-    setSubmitted(false);
   }
 
   function submit(e: FormEvent) {
     e.preventDefault();
     setTried(true);
-    const found = validateAuth(mode, input);
-    if (Object.keys(found).length > 0) {
-      setSubmitted(false);
+    if (Object.keys(validateAuth(mode, input)).length > 0) {
       requestAnimationFrame(() => formRef.current?.querySelector<HTMLElement>("[aria-invalid='true']")?.focus());
       return;
     }
-    setSubmitted(true);
+    signIn(userFromInput(mode, input));
+    router.push("/");
   }
 
   return (
@@ -79,6 +81,17 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
         onChange={(e) => update("password", e.target.value)}
         error={message("password")}
       />
+      {signup && (
+        <Field
+          label={a.confirmPassword}
+          name="confirmPassword"
+          type="password"
+          autoComplete="new-password"
+          value={input.confirmPassword}
+          onChange={(e) => update("confirmPassword", e.target.value)}
+          error={message("confirmPassword")}
+        />
+      )}
 
       {signup && (
         <div className="flex flex-col gap-1.5">
@@ -107,7 +120,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
         </div>
       )}
 
-      {submitted && <Notice variant="info">{a.notReady}</Notice>}
+      <Notice variant="info">{a.demoNote}</Notice>
 
       <Button type="submit" className="w-full mt-2">
         {signup ? a.signup : a.login}

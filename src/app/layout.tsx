@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Overpass } from "next/font/google";
 import "./globals.css";
+import { SessionProvider } from "@/components/auth/session.tsx";
 import { LangProvider } from "@/components/ui/lang.tsx";
 import { NavBar } from "@/components/ui/NavBar.tsx";
 import Footer from "@/components/ui/Footer.tsx";
@@ -23,10 +24,12 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     <html lang="id" className={`${overpass.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col bg-ground text-ink">
         <LangProvider>
-          <NavBar />
-          <main className="flex-1">{children}</main>
-          <Footer />
-          <TargetCursor />
+          <SessionProvider>
+            <NavBar />
+            <main className="flex-1">{children}</main>
+            <Footer />
+            <TargetCursor />
+          </SessionProvider>
         </LangProvider>
       </body>
     </html>
