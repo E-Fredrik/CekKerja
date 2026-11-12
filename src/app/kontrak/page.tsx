@@ -5,6 +5,7 @@ import type { CheckedClause, ContractCheck } from "@/lib/ai/analyze.ts";
 import type { Verdict } from "@/lib/ai/schemas.ts";
 import type { Mode } from "@/lib/ai/gemini.ts";
 import { Button } from "@/components/ui/Button.tsx";
+import { EmailResult } from "@/components/ui/EmailResult.tsx";
 import { FileDrop } from "@/components/ui/FileDrop.tsx";
 import { Finding } from "@/components/ui/Finding.tsx";
 import { Notice } from "@/components/ui/Notice.tsx";
@@ -132,6 +133,8 @@ function Result({ check, fileName, onAgain }: { check: ContractCheck; fileName: 
           <p className="bg-surface-2 text-quote text-ink rounded-md px-4 py-3 whitespace-pre-line">{check.negotiationMessage}</p>
         </section>
       )}
+
+      <EmailResult kind="contract" result={check} />
 
       <div className="flex flex-wrap gap-3">
         {check.negotiationMessage && (
