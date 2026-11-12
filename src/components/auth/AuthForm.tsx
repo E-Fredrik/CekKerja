@@ -120,8 +120,6 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
         </div>
       )}
 
-      <Notice variant="info">{a.demoNote}</Notice>
-
       <Button type="submit" className="w-full mt-2">
         {signup ? a.signup : a.login}
       </Button>
