@@ -105,6 +105,13 @@ export function NavBar() {
               inverse
               label="Pilih bahasa / Choose language"
             />
+            <Link
+              href="/masuk"
+              aria-current={pathname === "/masuk" ? "page" : undefined}
+              className="inline-flex items-center h-9 px-4 rounded-full bg-on-shell text-shell text-[14px] font-[650] leading-none hover:bg-on-shell/90 active:scale-[0.98] transition-all focus-visible:outline-3 focus-visible:outline-on-shell focus-visible:outline-offset-2"
+            >
+              {t.nav.masuk}
+            </Link>
           </div>
         </div>
       </div>
