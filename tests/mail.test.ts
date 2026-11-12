@@ -330,3 +330,24 @@ test("email-result route rejects bad input and reports when SMTP is not set up",
     if (saved.pass) process.env.SMTP_PASS = saved.pass;
   }
 });
+
+test("email-result route limits by the real client address and by recipient", async () => {
+  const saved = { host: process.env.SMTP_HOST, user: process.env.SMTP_USER, pass: process.env.SMTP_PASS };
+  delete process.env.SMTP_HOST;
+  delete process.env.SMTP_USER;
+  delete process.env.SMTP_PASS;
+  try {
+    const { POST } = await import("../src/app/api/email-result/route.ts");
+    const call = async (body: string, headers: Record<string, string>) =>
+      (await POST(new Request("http://x/api/email-result", { method: "POST", body, headers }))).status;
+    for (let i = 0; i < 5; i++) await call("not json", { "x-real-ip": "7.7.7.7", "x-forwarded-for": `10.0.0.${i}` });
+    assert.equal(await call("not json", { "x-real-ip": "7.7.7.7", "x-forwarded-for": "10.0.0.99" }), 429);
+    const toOther = JSON.stringify({ ...contractRequest, to: "limit-test@example.com" });
+    for (let i = 0; i < 3; i++) assert.equal(await call(toOther, { "x-real-ip": `8.8.8.${i}` }), 503);
+    assert.equal(await call(toOther, { "x-real-ip": "8.8.8.9" }), 429);
+  } finally {
+    if (saved.host) process.env.SMTP_HOST = saved.host;
+    if (saved.user) process.env.SMTP_USER = saved.user;
+    if (saved.pass) process.env.SMTP_PASS = saved.pass;
+  }
+});

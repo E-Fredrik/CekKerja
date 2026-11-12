@@ -1,17 +1,19 @@
 import { buildEmail, createRateLimiter, EmailRequest, MAX_EMAIL_REQUEST_BYTES } from "../../../lib/mail/email-request.ts";
 import { sendMail } from "../../../lib/mail/send.ts";
 
-const allow = createRateLimiter(5, 10 * 60 * 1000);
+const allowIp = createRateLimiter(5, 10 * 60 * 1000);
+const allowRecipient = createRateLimiter(3, 60 * 60 * 1000);
+const allowAll = createRateLimiter(100, 60 * 60 * 1000);
 
 const fail = (error: string, status: number) => Response.json({ error }, { status });
 
 function clientKey(req: Request) {
-  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "local";
+  return req.headers.get("x-real-ip")?.trim() || req.headers.get("x-forwarded-for")?.split(",").pop()?.trim() || "local";
 }
 
 export async function POST(req: Request) {
   if (Number(req.headers.get("content-length") ?? 0) > MAX_EMAIL_REQUEST_BYTES) return fail("tooLarge", 413);
-  if (!allow(clientKey(req))) return fail("rateLimited", 429);
+  if (!allowIp(clientKey(req))) return fail("rateLimited", 429);
 
   let body: unknown;
   try {
@@ -29,6 +31,7 @@ export async function POST(req: Request) {
   }
 
   const { to, mail } = buildEmail(parsed.data);
+  if (!allowRecipient(to.toLowerCase()) || !allowAll("all")) return fail("rateLimited", 429);
   try {
     await sendMail(to, mail);
   } catch (error) {
