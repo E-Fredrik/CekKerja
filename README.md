@@ -49,6 +49,7 @@ Status is updated with every feature pull request: Not started, In progress, Don
 - Sign in and sign up pages ready: bilingual forms that check the name, email, password length and consent before sending, point to the first field that needs fixing, and are reachable from a Sign in button in the top bar. Accounts themselves come in a later step.
 - Demo sign-in added: signing up (with a repeated password) or signing in keeps only your name and email in this browser, never the password, and the top bar shows the three checks and a Sign out button only while you are signed in. Real accounts replace this in a later step.
 - AI mode choice: the contract check has a Cepat / Teliti (fast / thorough) switch; Teliti uses a stronger Gemini model and falls back to the fast model automatically when it is busy.
+- Profile with CV ready: a signed-in user uploads a CV once; it is read into a profile (education, experience, skills, languages) that stays only in their browser, separately for each account, and can be replaced or removed at any time.
 
 ## Tech stack
 
