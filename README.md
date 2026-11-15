@@ -20,6 +20,7 @@ Status is updated with every feature pull request: Not started, In progress, Don
 |---|---|---|
 | Cek lowongan (job ad check) | Paste a job ad or link. Flags discriminatory or exploitative requirements (age, gender, appearance, unpaid internships) with the rule they may break, a question to ask, and an inclusive rewrite. | Done |
 | Cek kontrak (contract check) | Upload a contract PDF or photo. Each clause gets a red, yellow or green mark with its legal basis, plus a polite message for HR. | In progress |
+| CV match | Upload a CV once in your profile; every job ad you check is compared with it: which requirements you meet, what is missing, and suggestions for your application. | In progress |
 | Latihan interview (interview prep) | Reads the job ad, the company site and public interview question pages, then tailors questions to the candidate's profile and CV. | In progress |
 | Bilingual interface | Every page in Bahasa Indonesia and English, with a language toggle. | In progress |
 | Web mailer | Emails a result to the user's own address. | In progress |
@@ -55,7 +56,7 @@ Status is updated with every feature pull request: Not started, In progress, Don
 
 | Contributor | What they built |
 |---|---|
-| **Elifele Fredrik Imanuel Jelifta** ([@E-Fredrik](https://github.com/E-Fredrik)), maintainer | Project setup and team workflow; the design system (road-sign verdicts, traffic-light summary, colour and type tokens); the Gemini client with JSON schemas and model fallback; the labour rule list with plain-code wage and duration checks; the contract check API and page, with the fast and thorough AI modes and the email form; CI/CD with GitHub Actions and deployment to the server; the 3D traffic light, bracket cursor and auto-hiding top bar; code review and integration fixes across the project. |
+| **Elifele Fredrik Imanuel Jelifta** ([@E-Fredrik](https://github.com/E-Fredrik)), maintainer | Project setup and team workflow; the design system (road-sign verdicts, traffic-light summary, colour and type tokens); the Gemini client with JSON schemas and model fallback; the labour rule list with plain-code wage and duration checks; the contract check API and page, with the fast and thorough AI modes and the email form; the profile page where a CV is uploaded once and read into a profile; CI/CD with GitHub Actions and deployment to the server; the 3D traffic light, bracket cursor and auto-hiding top bar; code review and integration fixes across the project. |
 | **Dave Tristian Nurcahyo** ([@Dave03062006](https://github.com/Dave03062006)) | The safe page fetcher (robots.txt, blocked private addresses, time and size limits) and text extraction; the job ad check API and page; the interview question sources. |
 | **Kenneth Jonathan Halim** ([@Kiyono-kouji](https://github.com/Kiyono-kouji)) | The app shell, top bar and language toggle; the shared form and result components (verdict signs, traffic light, summary plate, findings); the web mailer with Nodemailer and its email templates; the landing page with the verdict legend and the remodelled 3D traffic light; the sign in and sign up pages with the demo session; the email result button. |
 
