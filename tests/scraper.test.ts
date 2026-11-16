@@ -8,6 +8,7 @@ import { USER_AGENT, fetchPage, type Fetcher } from "../src/lib/scraper/fetch-pa
 import { MAX_PUBLIC_PAGES, collectInterviewSources, companyLinks, isForbiddenSite } from "../src/lib/scraper/interview-sources.ts";
 import { MAX_AD_CHARS, analyzeAd, keepGroundedFlags, parseAdRequest, readAd } from "../src/app/api/check-ad/analyze-ad.ts";
 import { BadRequest } from "../src/lib/http.ts";
+import { GENERATED, MAX_PROFILE_CHARS, MAX_QUESTIONS, interviewParts, interviewPrompt, parseInterviewRequest, prepareInterview } from "../src/app/api/interview/prepare-interview.ts";
 import type { generateJson } from "../src/lib/ai/gemini.ts";
 
 const hasCode = (code: ScrapeErrorCode) => (error: unknown) => error instanceof ScrapeError && error.code === code;
@@ -467,4 +468,69 @@ test("collectInterviewSources still returns results when the suggester fails and
   const many = Array.from({ length: 9 }, (_, i) => `https://blog${i}.example.com/`);
   await collectInterviewSources({ role: "Admin" }, { fetch, suggest: async () => many });
   assert.equal(fetched.length, MAX_PUBLIC_PAGES);
+});
+
+const sourcesFixture = {
+  jobText: "Staf admin, menguasai Excel.",
+  companyText: "PT Example membuat kopi.",
+  questions: [
+    { question: "Apa pengalaman kamu dengan Excel?", source: "https://jobs.example.com/1" },
+    { question: "Ceritakan tentang diri kamu?", source: "https://blog.example.com/admin" },
+  ],
+  failed: [
+    { url: "search", reason: "GEMINI_API_KEY is not set." },
+    { url: "https://gone.example.com/", reason: "The page answered with status 404" },
+  ],
+};
+
+const iq = (question: string, source: string) => ({ question, category: "role" as const, whyTailored: "w", source, answerTips: "t" });
+
+test("parseInterviewRequest needs a role and defaults lang and mode", () => {
+  assert.deepEqual(parseInterviewRequest({ role: " Admin " }), { role: "Admin", lang: "id", mode: "fast" });
+  assert.equal(parseInterviewRequest({ role: "Admin", lang: "en", mode: "smart" }).mode, "smart");
+  assert.throws(() => parseInterviewRequest({}), BadRequest);
+  assert.throws(() => parseInterviewRequest({ role: "A" }), BadRequest);
+  assert.throws(() => parseInterviewRequest({ role: "Admin", profile: "x".repeat(MAX_PROFILE_CHARS + 1) }), BadRequest);
+});
+
+test("interviewParts tags every input and lists scraped questions with their source", () => {
+  const parts = interviewParts(parseInterviewRequest({ role: "Admin", company: "PT Example", profile: "Lulusan D3" }), sourcesFixture);
+  assert.match(parts, /<role>\nAdmin\n<\/role>/);
+  assert.match(parts, /<job_ad>\nStaf admin, menguasai Excel.\n<\/job_ad>/);
+  assert.match(parts, /<profile>\nLulusan D3\n<\/profile>/);
+  assert.match(parts, /1\. Apa pengalaman kamu dengan Excel\? \| https:\/\/jobs\.example\.com\/1/);
+  assert.match(interviewParts(parseInterviewRequest({ role: "Admin", jobText: "Pasted ad text" }), sourcesFixture), /<job_ad>\nPasted ad text\n/);
+  assert.match(interviewParts(parseInterviewRequest({ role: "Admin" }), { ...sourcesFixture, questions: [] }), /<scraped_questions>\n\(none\)\n/);
+});
+
+test("interviewPrompt asks for contract questions and treats tagged input as untrusted", () => {
+  const prompt = interviewPrompt("en");
+  assert.match(prompt, /untrusted/);
+  assert.match(prompt, /PKWT/);
+  assert.match(prompt, /probation/);
+  assert.match(prompt, /in English/);
+  assert.match(interviewPrompt("id"), /in Bahasa Indonesia/);
+});
+
+test("prepareInterview keeps real sources, marks unknown ones generated, caps questions and hides the search error", async () => {
+  let seen: { input: unknown; text: string; mode: string } | undefined;
+  const collect = async (input: unknown) => ((seen = { input, text: "", mode: "" }), sourcesFixture);
+  const questions = [
+    iq("Apa pengalaman kamu dengan Excel?", "https://jobs.example.com/1"),
+    iq("Pertanyaan karangan?", "https://made-up.example.com/"),
+    ...Array.from({ length: 20 }, (_, i) => iq(`Pertanyaan ${i}?`, GENERATED)),
+  ];
+  const generate = (async (_schema: unknown, _system: string, parts: { text: string }[], mode: string) => {
+    seen = { ...seen!, text: parts[0].text, mode };
+    return { role: "Admin", company: "PT Example", candidateSnapshot: "s", questions, questionsToAskThem: ["Apakah PKWT?"] };
+  }) as unknown as typeof generateJson;
+  const out = await prepareInterview(parseInterviewRequest({ role: "Admin", company: "PT Example", jobUrl: "https://jobs.example.com/1", mode: "smart" }), { collect, generate });
+
+  assert.deepEqual(seen?.input, { role: "Admin", company: "PT Example", jobUrl: "https://jobs.example.com/1", companyUrl: undefined });
+  assert.equal(seen?.mode, "smart");
+  assert.match(seen!.text, /<scraped_questions>/);
+  assert.equal(out.questions.length, MAX_QUESTIONS);
+  assert.equal(out.questions[0].source, "https://jobs.example.com/1");
+  assert.equal(out.questions[1].source, GENERATED);
+  assert.deepEqual(out.unreadSources, [{ url: "https://gone.example.com/", reason: "The page answered with status 404" }]);
 });
