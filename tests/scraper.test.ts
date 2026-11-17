@@ -8,6 +8,7 @@ import { USER_AGENT, fetchPage, type Fetcher } from "../src/lib/scraper/fetch-pa
 import { MAX_PUBLIC_PAGES, collectInterviewSources, companyLinks, isForbiddenSite } from "../src/lib/scraper/interview-sources.ts";
 import { MAX_AD_CHARS, analyzeAd, keepGroundedFlags, parseAdRequest, readAd } from "../src/app/api/check-ad/analyze-ad.ts";
 import { BadRequest } from "../src/lib/http.ts";
+import { strings } from "../src/lib/i18n.ts";
 import { GENERATED, MAX_PROFILE_CHARS, MAX_QUESTIONS, interviewParts, interviewPrompt, parseInterviewRequest, prepareInterview } from "../src/app/api/interview/prepare-interview.ts";
 import type { generateJson } from "../src/lib/ai/gemini.ts";
 
@@ -364,7 +365,7 @@ test("readAd prefers pasted text, fetches a link otherwise, and rejects short ad
 
 test("readAd turns a blocked or unreadable link into a bad request", async () => {
   const blocked = async () => Promise.reject(new ScrapeError("blocked_address", "private address"));
-  await assert.rejects(readAd({ url: "http://127.0.0.1/", lang: "id", mode: "fast" }, blocked), (e) => e instanceof BadRequest && /private address/.test(e.message));
+  await assert.rejects(readAd({ url: "http://127.0.0.1/", lang: "id", mode: "fast" }, blocked), (e) => e instanceof BadRequest && e.message === `${strings.id.lowongan.errors.readLink} ${strings.id.lowongan.errors.scrape.blocked_address}`);
   const broken = async () => Promise.reject(new Error("boom"));
   await assert.rejects(readAd({ url: "https://jobs.example.com/", lang: "id", mode: "fast" }, broken), (e) => !(e instanceof BadRequest));
 });
@@ -533,4 +534,30 @@ test("prepareInterview keeps real sources, marks unknown ones generated, caps qu
   assert.equal(out.questions[0].source, "https://jobs.example.com/1");
   assert.equal(out.questions[1].source, GENERATED);
   assert.deepEqual(out.unreadSources, [{ url: "https://gone.example.com/", reason: "The page answered with status 404" }]);
+});
+
+test("job ad and interview request errors come back in the language of the request", () => {
+  const messageOf = (fn: () => unknown) => {
+    try {
+      fn();
+    } catch (e) {
+      return e instanceof BadRequest ? e.message : "not a bad request";
+    }
+    return "no error";
+  };
+  assert.equal(messageOf(() => parseAdRequest({ lang: "en" })), strings.en.lowongan.errors.needAdOrLink);
+  assert.equal(messageOf(() => parseAdRequest({})), strings.id.lowongan.errors.needAdOrLink);
+  assert.equal(messageOf(() => parseAdRequest({ text: "a".repeat(MAX_AD_CHARS + 1), lang: "en" })), strings.en.lowongan.errors.adTooLong);
+  assert.equal(messageOf(() => parseAdRequest({ text: 5 })), strings.id.lowongan.errors.invalid);
+  assert.equal(messageOf(() => parseAdRequest(null)), strings.id.lowongan.errors.invalid);
+  assert.equal(messageOf(() => parseInterviewRequest({ lang: "en" })), strings.en.interview.errors.roleMissing);
+  assert.equal(messageOf(() => parseInterviewRequest({ role: "A" })), strings.id.interview.errors.roleMissing);
+  assert.equal(messageOf(() => parseInterviewRequest({ role: "Admin", profile: "x".repeat(MAX_PROFILE_CHARS + 1), lang: "en" })), strings.en.interview.errors.tooLong);
+});
+
+test("readAd explains an unreadable link in the language of the request", async () => {
+  const disallowed = async () => Promise.reject(new ScrapeError("robots_disallowed", "no"));
+  const errors = strings.en.lowongan.errors;
+  await assert.rejects(readAd({ url: "https://jobs.example.com/", lang: "en", mode: "fast" }, disallowed), { message: `${errors.readLink} ${errors.scrape.robots_disallowed}` });
+  await assert.rejects(readAd({ text: "short", lang: "en", mode: "fast" }), { message: errors.tooShort });
 });
