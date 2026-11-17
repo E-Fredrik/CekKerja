@@ -9,6 +9,9 @@ import { useLang } from "@/components/ui/lang.tsx";
 import { Segmented } from "@/components/ui/Segmented.tsx";
 import type { Lang } from "@/lib/i18n.ts";
 
+const TEXT_LINK =
+  "inline-flex items-center h-9 px-2.5 rounded-full hover:text-on-shell text-[14px] font-[650] leading-none whitespace-nowrap transition-colors focus-visible:outline-3 focus-visible:outline-on-shell focus-visible:outline-offset-2";
+
 const ACCOUNT_BUTTON =
   "inline-flex items-center h-9 px-4 rounded-full bg-on-shell text-shell text-[14px] font-[650] leading-none whitespace-nowrap cursor-pointer hover:bg-on-shell/90 active:scale-[0.98] transition-all focus-visible:outline-3 focus-visible:outline-on-shell focus-visible:outline-offset-2";
 
@@ -113,15 +116,24 @@ export function NavBar() {
               label="Pilih bahasa / Choose language"
             />
             {user ? (
-              <button type="button" onClick={signOut} className={ACCOUNT_BUTTON}>
-                {t.nav.keluar}
-              </button>
+              <>
+                <Link
+                  href="/profil"
+                  aria-current={pathname === "/profil" ? "page" : undefined}
+                  className={`${TEXT_LINK} ${pathname === "/profil" ? "text-on-shell" : "text-on-shell-soft"}`}
+                >
+                  {t.nav.profil}
+                </Link>
+                <button type="button" onClick={signOut} className={ACCOUNT_BUTTON}>
+                  {t.nav.keluar}
+                </button>
+              </>
             ) : (
               <>
                 <Link
                   href="/masuk"
                   aria-current={pathname === "/masuk" ? "page" : undefined}
-                  className="inline-flex items-center h-9 px-2.5 rounded-full text-on-shell-soft hover:text-on-shell text-[14px] font-[650] leading-none transition-colors focus-visible:outline-3 focus-visible:outline-on-shell focus-visible:outline-offset-2"
+                  className={`${TEXT_LINK} text-on-shell-soft`}
                 >
                   {t.nav.masuk}
                 </Link>
