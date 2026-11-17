@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { contractResultTemplate, jobAdResultTemplate } from "./templates.ts";
+import { contractResultTemplate, interviewPrepTemplate, jobAdResultTemplate } from "./templates.ts";
 import type { MailPayload } from "./send.ts";
 
 export const MAX_EMAIL_REQUEST_BYTES = 256 * 1024;
@@ -48,22 +48,39 @@ const adResult = z.object({
   inclusiveRewrite: text(8000).optional(),
 });
 
+const interviewResult = z.object({
+  role: line(200),
+  company: line(200),
+  candidateSnapshot: text(3000),
+  questions: z
+    .array(
+      z.object({
+        question: text(1000),
+        category: line(40),
+        whyTailored: text(2000),
+        answerTips: text(3000),
+      }),
+    )
+    .max(MAX_ITEMS),
+  questionsToAskThem: z.array(text(1000)).max(MAX_ITEMS).optional(),
+});
+
 const base = { to: z.string().trim().max(254).email(), lang: z.enum(["id", "en"]) };
 
 export const EmailRequest = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("contract"), ...base, result: contractResult }),
   z.object({ kind: z.literal("ad"), ...base, result: adResult }),
+  z.object({ kind: z.literal("interview"), ...base, result: interviewResult }),
 ]);
 
 export type EmailRequest = z.infer<typeof EmailRequest>;
 export type EmailKind = EmailRequest["kind"];
 
 export function buildEmail(request: EmailRequest): { to: string; mail: MailPayload } {
-  const mail =
-    request.kind === "contract"
-      ? contractResultTemplate({ ...request.result, lang: request.lang })
-      : jobAdResultTemplate({ ...request.result, lang: request.lang });
-  return { to: request.to, mail };
+  const lang = request.lang;
+  if (request.kind === "contract") return { to: request.to, mail: contractResultTemplate({ ...request.result, lang }) };
+  if (request.kind === "ad") return { to: request.to, mail: jobAdResultTemplate({ ...request.result, lang }) };
+  return { to: request.to, mail: interviewPrepTemplate({ ...request.result, lang }) };
 }
 
 export function createRateLimiter(limit: number, windowMs: number) {
