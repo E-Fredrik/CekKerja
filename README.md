@@ -54,16 +54,15 @@ Status is updated with every feature pull request: Not started, In progress, Don
 - Demo sign-in added: signing up (with a repeated password) or signing in keeps only your name and email in this browser, never the password, and the top bar shows the three checks and a Sign out button only while you are signed in. Real accounts replace this in a later step.
 - AI mode choice: the contract check has a Cepat / Teliti (fast / thorough) switch; Teliti uses a stronger Gemini model and falls back to the fast model automatically when it is busy.
 - Profile with CV ready: a signed-in user uploads a CV once; it is read into a profile (education, experience, skills, languages) that stays only in their browser, separately for each account, and can be replaced or removed at any time.
+- Integration fixes: upload and AI-busy errors now appear in Indonesian or English to match the page, and Next.js is updated to the patched 16.4.6.
 
 ## Contributors
 
 | Contributor | What they built |
 |---|---|
-| **Elifele Fredrik Imanuel Jelifta** ([@E-Fredrik](https://github.com/E-Fredrik)), maintainer | Project setup and team workflow; the design system (road-sign verdicts, traffic-light summary, colour and type tokens); the Gemini client with JSON schemas and model fallback; the labour rule list with plain-code wage and duration checks; the contract check API and page, with the fast and thorough AI modes and the email form; CI/CD with GitHub Actions and deployment to the server; the 3D traffic light, bracket cursor and auto-hiding top bar; code review and integration fixes across the project. |
-| **Dave Tristian Nurcahyo** ([@Dave03062006](https://github.com/Dave03062006)) | The safe page fetcher (robots.txt, blocked private addresses, time and size limits) and text extraction; the job ad check API and page; the interview question sources; the interview prep API that turns them into tailored practice questions. |
 | **Elifele Fredrik Imanuel Jelifta** ([@E-Fredrik](https://github.com/E-Fredrik)), maintainer | Project setup and team workflow; the design system (road-sign verdicts, traffic-light summary, colour and type tokens); the Gemini client with JSON schemas and model fallback; the labour rule list with plain-code wage and duration checks; the contract check API and page, with the fast and thorough AI modes and the email form; the profile page where a CV is uploaded once and read into a profile; CI/CD with GitHub Actions and deployment to the server; the 3D traffic light, bracket cursor and auto-hiding top bar; code review and integration fixes across the project. |
+| **Dave Tristian Nurcahyo** ([@Dave03062006](https://github.com/Dave03062006)) | The safe page fetcher (robots.txt, blocked private addresses, time and size limits) and text extraction; the job ad check API and page; the interview question sources; the interview prep API that turns them into tailored practice questions. |
 | **Kenneth Jonathan Halim** ([@Kiyono-kouji](https://github.com/Kiyono-kouji)) | The app shell, top bar and language toggle; the shared form and result components (verdict signs, traffic light, summary plate, findings); the web mailer with Nodemailer and its email templates; the landing page with the verdict legend and the remodelled 3D traffic light; the sign in and sign up pages with the demo session; the email result button, which can also send interview practice results; the Profile link in the top bar. |
-- Integration fixes: upload and AI-busy errors now appear in Indonesian or English to match the page, and Next.js is updated to the patched 16.4.6.
 
 ## Tech stack
 
