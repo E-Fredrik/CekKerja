@@ -351,3 +351,38 @@ test("email-result route limits by the real client address and by recipient", as
     if (saved.pass) process.env.SMTP_PASS = saved.pass;
   }
 });
+
+const interviewRequest = {
+  kind: "interview",
+  to: "kenneth@example.com",
+  lang: "en",
+  result: {
+    role: "Junior Admin",
+    company: "PT Contoh",
+    candidateSnapshot: "Strong <b>Excel</b> skills",
+    questions: [{ question: "Tell me about a project", category: "behavioral", whyTailored: "Fits your CV", answerTips: "Use STAR", source: "generated" }],
+    questionsToAskThem: ["Is there a probation period?"],
+    unreadSources: [{ url: "https://example.com", reason: "blocked" }],
+  },
+};
+
+test("EmailRequest accepts interview results, strips extra fields and builds an escaped email", async () => {
+  const { EmailRequest, buildEmail } = await import("../src/lib/mail/email-request.ts");
+  const parsed = EmailRequest.parse(interviewRequest);
+  assert.equal(parsed.kind, "interview");
+  assert.equal("unreadSources" in parsed.result, false);
+  const { to, mail } = buildEmail(parsed);
+  assert.equal(to, "kenneth@example.com");
+  assert.match(mail.html, /Tell me about a project/);
+  assert.doesNotMatch(mail.html, /<b>Excel<\/b>/);
+});
+
+test("EmailRequest rejects interview results with line breaks in the role or too many questions", async () => {
+  const { EmailRequest, MAX_ITEMS } = await import("../src/lib/mail/email-request.ts");
+  const injected = { ...interviewRequest, result: { ...interviewRequest.result, role: "Admin\nBcc: x@example.com" } };
+  assert.equal(EmailRequest.safeParse(injected).success, false);
+  const tooMany = { ...interviewRequest, result: { ...interviewRequest.result, questions: Array(MAX_ITEMS + 1).fill(interviewRequest.result.questions[0]) } };
+  assert.equal(EmailRequest.safeParse(tooMany).success, false);
+  const noExtra = { ...interviewRequest, result: { ...interviewRequest.result, questionsToAskThem: undefined } };
+  assert.equal(EmailRequest.safeParse(noExtra).success, true);
+});

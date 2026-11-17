@@ -19,6 +19,7 @@ const id = {
     masuk: "Masuk",
     daftar: "Daftar",
     keluar: "Keluar",
+    profil: "Profil",
   },
   footer: {
     disclaimer:
@@ -281,6 +282,7 @@ const en: Dict = {
     masuk: "Sign in",
     daftar: "Sign up",
     keluar: "Sign out",
+    profil: "Profile",
   },
   footer: {
     disclaimer:
