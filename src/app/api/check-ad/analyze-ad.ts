@@ -1,7 +1,8 @@
 import { z } from "zod";
 import { generateJson } from "../../../lib/ai/gemini.ts";
 import { AdResult, type Flag } from "../../../lib/ai/schemas.ts";
-import { BadRequest, type Lang } from "../../../lib/http.ts";
+import { BadRequest, langOf, type Lang } from "../../../lib/http.ts";
+import { strings } from "../../../lib/i18n.ts";
 import { ruleById, rulesFor } from "../../../lib/legal/rules.ts";
 import { ScrapeError } from "../../../lib/scraper/errors.ts";
 import { fetchPage } from "../../../lib/scraper/fetch-page.ts";
@@ -11,12 +12,12 @@ export const MAX_AD_CHARS = 20_000;
 
 export const AdRequest = z
   .object({
-    text: z.string().trim().max(MAX_AD_CHARS).optional(),
-    url: z.string().trim().max(2_000).optional(),
+    text: z.string().trim().max(MAX_AD_CHARS, "adTooLong").optional(),
+    url: z.string().trim().max(2_000, "linkTooLong").optional(),
     lang: z.enum(["id", "en"]).catch("id").default("id"),
     mode: z.enum(["fast", "smart"]).catch("fast").default("fast"),
   })
-  .refine((r) => r.text || r.url, { message: "Paste the job ad text or a link to it" });
+  .refine((r) => r.text || r.url, { message: "needAdOrLink" });
 
 export type AdRequest = z.infer<typeof AdRequest>;
 export type CheckedFlag = Flag & { source: string | null };
@@ -27,10 +28,17 @@ type Deps = {
   fetch?: (url: string) => Promise<{ url: string; text: string }>;
 };
 
+const adErrors = (lang: Lang) => strings[lang].lowongan.errors;
+
 export function parseAdRequest(body: unknown): AdRequest {
   const parsed = AdRequest.safeParse(body);
-  if (!parsed.success) throw new BadRequest(parsed.error.issues[0]?.message ?? "Invalid request");
-  return parsed.data;
+  if (parsed.success) return parsed.data;
+  throw new BadRequest(issueMessage(adErrors(langOf((body as { lang?: unknown } | null)?.lang)), parsed.error));
+}
+
+export function issueMessage(errors: { invalid: string }, error: z.ZodError): string {
+  const message = (errors as Record<string, unknown>)[error.issues[0]?.message ?? ""];
+  return typeof message === "string" ? message : errors.invalid;
 }
 
 export async function readAd(req: AdRequest, fetch: NonNullable<Deps["fetch"]> = fetchPage) {
@@ -42,12 +50,12 @@ export async function readAd(req: AdRequest, fetch: NonNullable<Deps["fetch"]> =
       text = page.text;
       sourceUrl = page.url;
     } catch (e) {
-      if (e instanceof ScrapeError) throw new BadRequest(`Could not read that link: ${e.message}`);
+      if (e instanceof ScrapeError) throw new BadRequest(`${adErrors(req.lang).readLink} ${adErrors(req.lang).scrape[e.code]}`);
       throw e;
     }
   }
   text = text.trim().slice(0, MAX_AD_CHARS);
-  if (text.length < MIN_AD_CHARS) throw new BadRequest("The job ad is too short to check");
+  if (text.length < MIN_AD_CHARS) throw new BadRequest(adErrors(req.lang).tooShort);
   return { text, sourceUrl };
 }
 

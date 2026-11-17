@@ -1,7 +1,9 @@
 import { z } from "zod";
 import { generateJson } from "../../../lib/ai/gemini.ts";
 import { InterviewResult } from "../../../lib/ai/schemas.ts";
-import { BadRequest, type Lang } from "../../../lib/http.ts";
+import { BadRequest, langOf, type Lang } from "../../../lib/http.ts";
+import { strings } from "../../../lib/i18n.ts";
+import { issueMessage } from "../check-ad/analyze-ad.ts";
 import { collectInterviewSources, MAX_JOB_CHARS, type FailedSource, type InterviewSources, type SourcesInput } from "../../../lib/scraper/interview-sources.ts";
 
 export const MAX_QUESTIONS = 15;
@@ -9,12 +11,12 @@ export const MAX_PROFILE_CHARS = 3_000;
 export const GENERATED = "generated";
 
 export const InterviewRequest = z.object({
-  role: z.string({ error: "Write the role you are applying for" }).trim().min(2, "Write the role you are applying for").max(120),
-  company: z.string().trim().max(120).optional(),
-  jobText: z.string().trim().max(MAX_JOB_CHARS).optional(),
-  jobUrl: z.string().trim().max(2_000).optional(),
-  companyUrl: z.string().trim().max(2_000).optional(),
-  profile: z.string().trim().max(MAX_PROFILE_CHARS).optional(),
+  role: z.string({ error: "roleMissing" }).trim().min(2, "roleMissing").max(120, "tooLong"),
+  company: z.string().trim().max(120, "tooLong").optional(),
+  jobText: z.string().trim().max(MAX_JOB_CHARS, "tooLong").optional(),
+  jobUrl: z.string().trim().max(2_000, "tooLong").optional(),
+  companyUrl: z.string().trim().max(2_000, "tooLong").optional(),
+  profile: z.string().trim().max(MAX_PROFILE_CHARS, "tooLong").optional(),
   lang: z.enum(["id", "en"]).catch("id").default("id"),
   mode: z.enum(["fast", "smart"]).catch("fast").default("fast"),
 });
@@ -29,8 +31,8 @@ type Deps = {
 
 export function parseInterviewRequest(body: unknown): InterviewRequest {
   const parsed = InterviewRequest.safeParse(body);
-  if (!parsed.success) throw new BadRequest(parsed.error.issues[0]?.message ?? "Invalid request");
-  return parsed.data;
+  if (parsed.success) return parsed.data;
+  throw new BadRequest(issueMessage(strings[langOf((body as { lang?: unknown } | null)?.lang)].interview.errors, parsed.error));
 }
 
 export function interviewPrompt(lang: Lang) {
