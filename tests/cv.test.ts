@@ -68,7 +68,7 @@ test("the cv route rejects a request without a file", async () => {
     form.append("lang", "id");
     const res = await POST(new Request("http://x/api/cv", { method: "POST", body: form }));
     assert.equal(res.status, 400);
-    assert.deepEqual(await res.json(), { error: "CV: file is missing" });
+    assert.deepEqual(await res.json(), { error: "CV: file is missing", code: "fileMissing" });
   } finally {
     console.error = quiet;
   }

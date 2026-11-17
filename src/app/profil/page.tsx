@@ -33,7 +33,9 @@ export default function ProfilPage() {
       const res = await fetch("/api/cv", { method: "POST", body: form });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
-        setStatus({ state: "error", message: typeof data?.error === "string" ? data.error : t.check.errorUnknown });
+        const codes: Record<string, string> = t.check.errors;
+        const message = typeof data?.code === "string" && data.code in codes ? codes[data.code] : typeof data?.error === "string" ? data.error : t.check.errorUnknown;
+        setStatus({ state: "error", message });
         return;
       }
       saveCv(data);

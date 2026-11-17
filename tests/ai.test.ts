@@ -103,6 +103,24 @@ test("handle returns JSON, 400 for BadRequest, and hides internal 500 details", 
   assert.match((await busy.json()).error, /busy right now/);
 });
 
+test("handle adds a code the page can translate, without leaking details", async () => {
+  const req = new Request("http://x/api");
+  const quiet = console.error;
+  console.error = () => {};
+  try {
+    const missing = await handle(async () => checkFile(null, "Contract"))(req);
+    assert.deepEqual(await missing.json(), { error: "Contract: file is missing", code: "fileMissing" });
+    const type = await handle(async () => checkFile(new File(["x"], "a.docx", { type: "application/msword" }), "Contract"))(req);
+    assert.equal((await type.json()).code, "fileType");
+    const busy = await handle(() => withRetry(() => Promise.reject(fail(503)), ["a"], 1))(req);
+    assert.equal((await busy.json()).code, "busy");
+    const crash = await handle(async () => { throw new Error("secret at 10.0.0.1"); })(req);
+    assert.deepEqual(await crash.json(), { error: "Something went wrong. Try again.", code: "unknown" });
+  } finally {
+    console.error = quiet;
+  }
+});
+
 const clause = (ruleId: string, verdict: "red" | "yellow" | "green") => ({ title: "t", text: "x", verdict, ruleId, explanation: "e", questionToAsk: "q" });
 
 const contract = (over: Partial<ContractResult>) =>

@@ -98,6 +98,13 @@ const id = {
   check: {
     errorNetwork: "Tidak dapat menghubungi server. Coba lagi.",
     errorUnknown: "Terjadi kesalahan. Coba lagi.",
+    errors: {
+      fileMissing: "Pilih file dulu.",
+      fileType: "Format tidak didukung. Gunakan PDF, PNG, JPG, atau WEBP.",
+      fileSize: "File terlalu besar. Maksimum 8 MB.",
+      busy: "Layanan AI sedang sibuk. Tunggu sebentar, lalu coba lagi.",
+      unknown: "Terjadi kesalahan. Coba lagi.",
+    },
   },
   profile: {
     title: "Profil kamu",
@@ -353,6 +360,13 @@ const en: Dict = {
   check: {
     errorNetwork: "Could not reach the server. Try again.",
     errorUnknown: "An error occurred. Try again.",
+    errors: {
+      fileMissing: "Choose a file first.",
+      fileType: "Format not supported. Use PDF, PNG, JPG, or WEBP.",
+      fileSize: "File too large. Maximum 8 MB.",
+      busy: "The AI service is busy right now. Wait a moment and try again.",
+      unknown: "Something went wrong. Try again.",
+    },
   },
   profile: {
     title: "Your profile",

@@ -54,3 +54,6 @@ next-env.d.ts
 
 # graphify knowledge graph
 graphify-out/
+
+# local Claude Code settings: never commit
+/.claude/

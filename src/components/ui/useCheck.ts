@@ -34,7 +34,9 @@ export function useCheck<T>(url: string): UseCheckReturn<T> {
           let message = t.check.errorUnknown;
           try {
             const json = await res.json();
-            if (typeof json?.error === "string") message = json.error;
+            const codes: Record<string, string> = t.check.errors;
+            if (typeof json?.code === "string" && json.code in codes) message = codes[json.code];
+            else if (typeof json?.error === "string") message = json.error;
           } catch {}
           setState({ status: "error", message });
           return;
