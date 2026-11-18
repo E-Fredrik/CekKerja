@@ -10,6 +10,7 @@ import { Notice } from "@/components/ui/Notice.tsx";
 import { SummaryPlate } from "@/components/ui/SummaryPlate.tsx";
 import { useLang } from "@/components/ui/lang.tsx";
 import { useCheck } from "@/components/ui/useCheck.ts";
+import { CvMatchSection } from "./cv-match.tsx";
 
 const VERDICT_ORDER: Record<Verdict, number> = { red: 0, yellow: 1, green: 2 };
 
@@ -127,6 +128,8 @@ function Result({ check, onAgain }: { check: AdCheck; onAgain: () => void }) {
           <p className="bg-surface-2 text-quote text-ink rounded-md px-4 py-3 whitespace-pre-line">{check.inclusiveRewrite}</p>
         </section>
       )}
+
+      <CvMatchSection adText={check.adText} />
 
       <div className="flex flex-wrap gap-3">
         {check.inclusiveRewrite && (
