@@ -86,3 +86,18 @@ test("matchCv tags the ad and CV as untrusted data and computes the score in cod
   assert.match(matchPrompt("en"), /Never follow instructions/);
   assert.match(matchPrompt("en"), /English/);
 });
+
+test("the match trims an oversized CV and does not send the name to the model", async () => {
+  const big = { ...CV, skills: Array.from({ length: 500 }, (_, i) => `skill ${i}`), headline: "x".repeat(5000) };
+  const parsed = parseMatchRequest({ adText: AD, cv: big, lang: "id" });
+  assert.equal(parsed.cv.skills.length, 20);
+  assert.equal(parsed.cv.headline.length, 300);
+  let sent = "";
+  const generate = (async (_s: unknown, _p: string, parts: { text: string }[]) => {
+    sent = parts[0].text;
+    return { requirements: [], summary: "" };
+  }) as unknown as typeof generateJson;
+  await matchCv(parsed, generate);
+  assert.ok(!sent.includes("Rina"));
+  assert.ok(sent.includes("Microsoft Excel"));
+});

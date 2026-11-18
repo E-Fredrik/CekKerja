@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { generateJson } from "../ai/gemini.ts";
-import { CvProfile } from "../cv/profile.ts";
+import { CvProfile, trimCv } from "../cv/profile.ts";
 import { BadRequest, langOf, type Lang } from "../http.ts";
 import { strings } from "../i18n.ts";
 
@@ -13,7 +13,7 @@ export type MatchStatus = z.infer<typeof MatchStatus>;
 
 export const MatchRequest = z.object({
   adText: z.string({ error: "adMissing" }).trim().min(MIN_AD_CHARS, "adMissing").max(MAX_AD_CHARS, "adTooLong"),
-  cv: CvProfile,
+  cv: CvProfile.transform(trimCv),
   lang: z.enum(["id", "en"]).catch("id").default("id"),
   mode: z.enum(["fast", "smart"]).catch("fast").default("fast"),
 });
@@ -89,7 +89,7 @@ export function matchScore(requirements: { status: MatchStatus }[]): number | nu
 }
 
 export async function matchCv(req: MatchRequest, generate: typeof generateJson = generateJson): Promise<CvMatch> {
-  const parts = [{ text: `<job_ad>\n${req.adText}\n</job_ad>\n\n<cv>\n${JSON.stringify(req.cv)}\n</cv>` }];
+  const parts = [{ text: `<job_ad>\n${req.adText}\n</job_ad>\n\n<cv>\n${JSON.stringify({ ...req.cv, name: undefined })}\n</cv>` }];
   const result = keepGroundedRequirements(await generate(MatchResult, matchPrompt(req.lang), parts, req.mode), req.adText, req.cv);
   return { ...result, score: matchScore(result.requirements) };
 }
