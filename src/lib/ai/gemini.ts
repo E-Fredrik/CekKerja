@@ -1,10 +1,15 @@
 import { GoogleGenAI, type Part } from "@google/genai";
 import { z } from "zod";
+import { CLAUDE_FAST, CLAUDE_SMART, ModelRefusal, claudeJson } from "./claude.ts";
 
 export type Mode = "fast" | "smart";
 const FAST = "gemini-flash-lite-latest";
 const SMART = process.env.GEMINI_MODEL || "gemini-flash-latest";
-export const modelsFor = (mode: Mode) => (mode === "smart" ? [SMART, FAST, FAST] : [FAST, FAST]);
+export const usesClaude = () => process.env.AI_PROVIDER === "claude";
+export const modelsFor = (mode: Mode) =>
+  usesClaude()
+    ? mode === "smart" ? [CLAUDE_SMART, CLAUDE_FAST, CLAUDE_FAST] : [CLAUDE_FAST, CLAUDE_FAST]
+    : mode === "smart" ? [SMART, FAST, FAST] : [FAST, FAST];
 const TIMEOUT_MS = 60_000;
 
 let client: GoogleGenAI | null = null;
@@ -16,9 +21,9 @@ function ai() {
 export const AI_BUSY_MESSAGE = "The AI service is busy right now. Wait a minute and try again.";
 const RETRYABLE = new Set([429, 500, 503, 504]);
 const retryable = (e: unknown) => {
-  if (e instanceof SyntaxError || e instanceof z.ZodError) return true;
+  if (e instanceof SyntaxError || e instanceof z.ZodError || e instanceof ModelRefusal) return true;
   const status = (e as { status?: number }).status;
-  return status === undefined ? /timeout|abort|fetch failed/i.test(String(e)) : RETRYABLE.has(status);
+  return status === undefined ? /timeout|timed out|abort|fetch failed|connection error/i.test(String(e)) : RETRYABLE.has(status);
 };
 
 export async function withRetry<T>(call: (model: string) => Promise<T>, models = modelsFor("fast"), pauseMs = 1500): Promise<T> {
@@ -44,6 +49,7 @@ export async function generateJson<S extends z.ZodType>(
   const jsonSchema = z.toJSONSchema(schema) as Record<string, unknown>;
   delete jsonSchema.$schema;
   return withRetry(async (model) => {
+    if (model.startsWith("claude-")) return claudeJson(schema, system, parts, model);
     const res = await ai().models.generateContent({
       model,
       contents: [{ role: "user", parts }],
