@@ -36,6 +36,12 @@ const id = {
   field: {
     required: "Wajib diisi",
   },
+  signInEmail: {
+    subject: "Kode masuk Cek Kerja: {code}",
+    heading: "Kode masuk kamu",
+    lead: "Masukkan kode ini di halaman masuk Cek Kerja. Kode berlaku 10 menit.",
+    ignore: "Kalau kamu tidak sedang masuk ke Cek Kerja, abaikan email ini. Jangan berikan kode ini kepada siapa pun.",
+  },
   emailResult: {
     label: "Kirim hasil ke email kamu",
     hint: "Kami hanya mengirim ke alamat yang kamu tulis di sini, tidak ke perusahaan atau orang lain.",
@@ -84,7 +90,15 @@ const id = {
       password: "Buat kata sandi",
       profile: "Tentang kamu",
       review: "Periksa dan setujui",
+      code: "Masukkan kode",
     },
+    code: "Kode 6 angka",
+    codeSentTo: "Kami mengirim kode ke",
+    codeHint: "Cek folder spam jika email belum masuk. Kode berlaku 10 menit.",
+    resend: "Kirim ulang kode",
+    resendIn: "Kirim ulang kode ({s})",
+    codeResent: "Kode baru sudah dikirim. Kode lama tidak berlaku lagi.",
+    verify: "Masuk",
     reviewLead: "Pastikan data ini benar sebelum membuat akun.",
     strength: {
       label: "Kekuatan kata sandi",
@@ -108,6 +122,12 @@ const id = {
       emailNotConfirmed: "Akun ini belum aktif. Hubungi kami jika masalah ini berlanjut.",
       notConfigured: "Akun belum bisa dipakai di server ini. Coba lagi nanti.",
       unknown: "Ada masalah saat menghubungi server akun. Coba lagi sebentar lagi.",
+      codeWrong: "Kode salah. Sisa {n} percobaan.",
+      codeExpired: "Kode ini tidak berlaku lagi. Minta kode baru.",
+      resendWait: "Tunggu {s} detik sebelum minta kode baru.",
+      mailNotConfigured: "Email kode belum bisa dikirim dari server ini. Coba lagi nanti.",
+      sendFailed: "Kode gagal dikirim. Coba lagi sebentar lagi.",
+      invalid: "Data tidak lengkap. Muat ulang halaman, lalu coba lagi.",
     },
     errors: {
       nameRequired: "Tulis nama kamu.",
@@ -118,6 +138,7 @@ const id = {
       passwordShort: "Kata sandi minimal 8 karakter.",
       passwordMismatch: "Kata sandi tidak sama. Ketik ulang kata sandi yang sama.",
       consentRequired: "Centang kotak ini untuk melanjutkan.",
+      codeInvalid: "Tulis 6 angka dari email.",
     },
   },
   fileDrop: {
@@ -403,6 +424,12 @@ const en: Dict = {
   field: {
     required: "Required",
   },
+  signInEmail: {
+    subject: "Your Cek Kerja sign in code: {code}",
+    heading: "Your sign in code",
+    lead: "Enter this code on the Cek Kerja sign in page. It works for 10 minutes.",
+    ignore: "If you are not signing in to Cek Kerja, ignore this email. Never share this code with anyone.",
+  },
   emailResult: {
     label: "Email this result to yourself",
     hint: "We only send to the address you type here, never to an employer or anyone else.",
@@ -451,7 +478,15 @@ const en: Dict = {
       password: "Create a password",
       profile: "About you",
       review: "Review and agree",
+      code: "Enter the code",
     },
+    code: "6-digit code",
+    codeSentTo: "We sent a code to",
+    codeHint: "Check your spam folder if the email has not arrived. The code works for 10 minutes.",
+    resend: "Send a new code",
+    resendIn: "Send a new code ({s})",
+    codeResent: "A new code is on its way. The old code no longer works.",
+    verify: "Sign in",
     reviewLead: "Make sure these details are right before creating your account.",
     strength: {
       label: "Password strength",
@@ -475,6 +510,12 @@ const en: Dict = {
       emailNotConfirmed: "This account is not active yet. Contact us if this keeps happening.",
       notConfigured: "Accounts are not available on this server yet. Try again later.",
       unknown: "Something went wrong reaching the account server. Try again shortly.",
+      codeWrong: "Wrong code. {n} tries left.",
+      codeExpired: "This code no longer works. Ask for a new one.",
+      resendWait: "Wait {s} seconds before asking for a new code.",
+      mailNotConfigured: "Sign in codes cannot be emailed from this server yet. Try again later.",
+      sendFailed: "The code could not be sent. Try again shortly.",
+      invalid: "Some details are missing. Reload the page, then try again.",
     },
     errors: {
       nameRequired: "Enter your name.",
@@ -485,6 +526,7 @@ const en: Dict = {
       passwordShort: "Password must be at least 8 characters.",
       passwordMismatch: "Passwords do not match. Type the same password again.",
       consentRequired: "Tick this box to continue.",
+      codeInvalid: "Enter the 6 digits from the email.",
     },
   },
   fileDrop: {

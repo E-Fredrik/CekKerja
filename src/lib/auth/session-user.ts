@@ -24,7 +24,31 @@ export type AuthServerError =
   | "rateLimited"
   | "emailNotConfirmed"
   | "notConfigured"
-  | "unknown";
+  | "unknown"
+  | "codeWrong"
+  | "codeExpired"
+  | "resendWait"
+  | "mailNotConfigured"
+  | "sendFailed"
+  | "invalid";
+
+const API_ERRORS: readonly string[] = [
+  "invalidCredentials",
+  "emailTaken",
+  "weakPassword",
+  "rateLimited",
+  "emailNotConfirmed",
+  "notConfigured",
+  "codeWrong",
+  "codeExpired",
+  "resendWait",
+  "mailNotConfigured",
+  "sendFailed",
+  "invalid",
+];
+
+export const apiAuthError = (value: unknown): AuthServerError =>
+  typeof value === "string" && API_ERRORS.includes(value) ? (value as AuthServerError) : "unknown";
 
 export function authServerError(error: { code?: string; status?: number } | null | undefined): AuthServerError {
   switch (error?.code) {

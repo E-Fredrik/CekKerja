@@ -18,3 +18,11 @@ export function safeNextPath(raw: string | null | undefined): string {
   if (isGuestOnlyPath(raw.split(/[?#]/)[0])) return "/";
   return raw;
 }
+
+export function hasSecondFactor(amr: unknown): boolean {
+  if (!Array.isArray(amr)) return false;
+  return amr.some((entry) => {
+    const method = typeof entry === "string" ? entry : (entry as { method?: unknown } | null)?.method;
+    return method === "otp" || method === "magiclink";
+  });
+}
