@@ -44,7 +44,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const user = parseStoredUser(raw);
 
   const signIn = useCallback((next: SessionUser) => {
-    const stored: SessionUser = { name: next.name.trim(), email: next.email.trim() };
+    const stored: SessionUser = { name: next.name.trim(), email: next.email.trim(), ...(next.status && { status: next.status }) };
     localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
     notify();
   }, []);
