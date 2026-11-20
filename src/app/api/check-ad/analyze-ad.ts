@@ -5,7 +5,7 @@ import { BadRequest, langOf, type Lang } from "../../../lib/http.ts";
 import { strings } from "../../../lib/i18n.ts";
 import { ruleById, rulesFor } from "../../../lib/legal/rules.ts";
 import { ScrapeError } from "../../../lib/scraper/errors.ts";
-import { fetchPage } from "../../../lib/scraper/fetch-page.ts";
+import { readPage } from "../../../lib/scraper/scrapling.ts";
 
 export const MIN_AD_CHARS = 30;
 export const MAX_AD_CHARS = 20_000;
@@ -41,7 +41,7 @@ export function issueMessage(errors: { invalid: string }, error: z.ZodError): st
   return typeof message === "string" ? message : errors.invalid;
 }
 
-export async function readAd(req: AdRequest, fetch: NonNullable<Deps["fetch"]> = fetchPage) {
+export async function readAd(req: AdRequest, fetch: NonNullable<Deps["fetch"]> = readPage) {
   let text = req.text ?? "";
   let sourceUrl: string | null = null;
   if (!text && req.url) {

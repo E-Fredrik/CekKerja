@@ -4,7 +4,9 @@ import { ScrapeError, type ScrapeErrorCode } from "../src/lib/scraper/errors.ts"
 import { assertPublicHost, checkUrl, isBlockedAddress } from "../src/lib/scraper/url-guard.ts";
 import { extractQuestions, htmlToText } from "../src/lib/scraper/extract.ts";
 import { isAllowedByRobots, matchesPattern } from "../src/lib/scraper/robots.ts";
-import { USER_AGENT, fetchPage, type Fetcher } from "../src/lib/scraper/fetch-page.ts";
+import { TIMEOUT_MS, USER_AGENT, fetchPage, type Fetcher } from "../src/lib/scraper/fetch-page.ts";
+import { PYTHON_STARTUP_MS, ScraplingUnavailable, parseScraplingOutput, readPage, readWithScrapling, type Runner } from "../src/lib/scraper/scrapling.ts";
+import { guardSite, isLinkedInJobUrl } from "../src/lib/scraper/site-rules.ts";
 import { MAX_PUBLIC_PAGES, collectInterviewSources, companyLinks, isForbiddenSite } from "../src/lib/scraper/interview-sources.ts";
 import { MAX_AD_CHARS, analyzeAd, keepGroundedFlags, parseAdRequest, readAd } from "../src/app/api/check-ad/analyze-ad.ts";
 import { BadRequest } from "../src/lib/http.ts";
@@ -560,4 +562,156 @@ test("readAd explains an unreadable link in the language of the request", async 
   const errors = strings.en.lowongan.errors;
   await assert.rejects(readAd({ url: "https://jobs.example.com/", lang: "en", mode: "fast" }, disallowed), { message: `${errors.readLink} ${errors.scrape.robots_disallowed}` });
   await assert.rejects(readAd({ text: "short", lang: "en", mode: "fast" }), { message: errors.tooShort });
+});
+
+const scraplingPage = (url: string, body: string, extra: Partial<{ status: number; location: string; contentType: string }> = {}) =>
+  JSON.stringify({ url, status: 200, location: "", contentType: "text/html; charset=utf-8", title: "", html: body, ...extra });
+
+function fakeRunner(answers: Record<string, string>) {
+  const calls: { python: string; args: string[]; timeout: number }[] = [];
+  const run: Runner = async (python, args, options) => {
+    calls.push({ python, args, timeout: options.timeout });
+    const answer = answers[args[1]];
+    if (answer === undefined) throw new Error(`unexpected url ${args[1]}`);
+    return answer;
+  };
+  return { run, calls };
+}
+
+test("site rules allow only public LinkedIn job ad pages and block Glassdoor, Indeed and social media", () => {
+  for (const url of ["https://www.linkedin.com/jobs/view/4012345678", "https://id.linkedin.com/jobs/view/staf-admin-at-pt-contoh-4012345678/", "https://linkedin.com/jobs/view/123"]) {
+    assert.ok(isLinkedInJobUrl(new URL(url)), url);
+  }
+  for (const url of [
+    "https://www.linkedin.com/in/rina",
+    "https://www.linkedin.com/jobs/search/?keywords=admin",
+    "https://www.linkedin.com/jobs/view/123/apply",
+    "https://www.linkedin.com/login",
+    "https://www.linkedin.com/company/contoh/people",
+    "http://www.linkedin.com/jobs/view/123",
+    "https://linkedin.evil.example/jobs/view/123",
+  ]) {
+    assert.equal(isLinkedInJobUrl(new URL(url)), false, url);
+    assert.throws(() => guardSite(new URL(url)), hasCode("site_not_allowed"), url);
+  }
+  assert.equal(guardSite(new URL("https://www.linkedin.com/jobs/view/123/?trackingId=abc&refId=x#top")).href, "https://www.linkedin.com/jobs/view/123/");
+  for (const url of ["https://www.glassdoor.co.id/x", "https://id.indeed.com/viewjob", "https://m.facebook.com/jobs", "https://x.com/a"]) {
+    assert.throws(() => guardSite(new URL(url)), hasCode("site_not_allowed"), url);
+  }
+  assert.equal(guardSite(new URL("https://jobs.example.com/1")).href, "https://jobs.example.com/1");
+});
+
+test("fetchPage refuses blocked sites and reads a LinkedIn job page without robots.txt", async () => {
+  const { fetcher, calls } = fakeFetch({ "https://www.linkedin.com/jobs/view/123": html("<h1>Staf Admin</h1>") });
+  await assert.rejects(fetchPage("https://www.linkedin.com/in/rina", { fetch: fetcher, lookup: publicLookup }), hasCode("site_not_allowed"));
+  await assert.rejects(fetchPage("https://www.glassdoor.com/x", { fetch: fetcher, lookup: publicLookup }), hasCode("site_not_allowed"));
+  assert.equal(calls.length, 0);
+  const page = await fetchPage("https://www.linkedin.com/jobs/view/123?trk=x", { fetch: fetcher, lookup: publicLookup });
+  assert.equal(page.text, "Staf Admin");
+  assert.deepEqual(calls.map((c) => c.url), ["https://www.linkedin.com/jobs/view/123"]);
+});
+
+test("fetchPage does not follow a LinkedIn job page that redirects to the sign-in wall", async () => {
+  const { fetcher } = fakeFetch({ "https://www.linkedin.com/jobs/view/123": redirect("https://www.linkedin.com/authwall?trk=x") });
+  await assert.rejects(fetchPage("https://www.linkedin.com/jobs/view/123", { fetch: fetcher, lookup: publicLookup }), hasCode("site_not_allowed"));
+});
+
+test("parseScraplingOutput accepts a page or an error and rejects anything else", () => {
+  assert.equal((parseScraplingOutput(scraplingPage("https://a.example/", "<p>x</p>")) as { status: number }).status, 200);
+  assert.deepEqual(parseScraplingOutput('{"error":"Scrapling is not installed"}'), { error: "Scrapling is not installed" });
+  for (const bad of ["", "not json", '{"url":"x"}', "[1]"]) {
+    assert.throws(() => parseScraplingOutput(bad), ScraplingUnavailable, bad);
+  }
+});
+
+test("readWithScrapling checks robots.txt, runs the script once per hop and returns the page text", async () => {
+  const { fetcher, calls: fetches } = fakeFetch({
+    "https://jobs.example.com/robots.txt": new Response("User-agent: *\nDisallow: /admin", { headers: { "content-type": "text/plain" } }),
+  });
+  const { run, calls } = fakeRunner({
+    "https://jobs.example.com/old": scraplingPage("https://jobs.example.com/old", "", { status: 301, location: "/lowongan/1" }),
+    "https://jobs.example.com/lowongan/1": scraplingPage("https://jobs.example.com/lowongan/1", "<script>x()</script><h1>Admin Gudang</h1><p>Gaji Rp5.000.000</p>"),
+  });
+  const page = await readWithScrapling("https://jobs.example.com/old", { python: "py", run, fetch: fetcher, lookup: publicLookup });
+  assert.deepEqual(page, {
+    url: "https://jobs.example.com/lowongan/1",
+    contentType: "text/html",
+    html: "<script>x()</script><h1>Admin Gudang</h1><p>Gaji Rp5.000.000</p>",
+    text: "Admin Gudang\nGaji Rp5.000.000",
+  });
+  assert.deepEqual(calls.map((c) => [c.python, c.args[0].endsWith("scrapling_fetch.py"), c.args[1]]), [
+    ["py", true, "https://jobs.example.com/old"],
+    ["py", true, "https://jobs.example.com/lowongan/1"],
+  ]);
+  assert.equal(calls[0].timeout, TIMEOUT_MS + PYTHON_STARTUP_MS);
+  assert.deepEqual(fetches.map((c) => c.url), ["https://jobs.example.com/robots.txt", "https://jobs.example.com/robots.txt"]);
+});
+
+test("readWithScrapling stops before running the script on a disallowed, private or blocked page", async () => {
+  const { fetcher } = fakeFetch({ "https://jobs.example.com/robots.txt": new Response("User-agent: *\nDisallow: /", { headers: { "content-type": "text/plain" } }) });
+  const { run, calls } = fakeRunner({
+    "https://jobs.example.com/go": scraplingPage("https://jobs.example.com/go", "", { status: 302, location: "http://127.0.0.1/admin" }),
+  });
+  const options = { python: "py", run, fetch: fetcher, lookup: publicLookup };
+  await assert.rejects(readWithScrapling("https://jobs.example.com/lowongan", options), hasCode("robots_disallowed"));
+  await assert.rejects(readWithScrapling("https://www.linkedin.com/in/rina", options), hasCode("site_not_allowed"));
+  await assert.rejects(readWithScrapling("http://localhost:3000/", options), hasCode("blocked_address"));
+  assert.equal(calls.length, 0);
+  const open = fakeFetch({});
+  await assert.rejects(readWithScrapling("https://jobs.example.com/go", { ...options, fetch: open.fetcher }), hasCode("blocked_address"));
+  assert.equal(calls.length, 1);
+});
+
+test("readWithScrapling reads a LinkedIn job page without robots.txt or tracking parameters", async () => {
+  const { fetcher, calls: fetches } = fakeFetch({});
+  const { run, calls } = fakeRunner({ "https://id.linkedin.com/jobs/view/4012345678": scraplingPage("https://id.linkedin.com/jobs/view/4012345678", "<h1>Staf Admin</h1>") });
+  const page = await readWithScrapling("https://id.linkedin.com/jobs/view/4012345678?trackingId=abc", { python: "py", run, fetch: fetcher, lookup: publicLookup });
+  assert.equal(page.text, "Staf Admin");
+  assert.deepEqual(calls.map((c) => c.args[1]), ["https://id.linkedin.com/jobs/view/4012345678"]);
+  assert.equal(fetches.length, 0);
+});
+
+test("readWithScrapling reports error statuses and files that are not web pages", async () => {
+  const { fetcher } = fakeFetch({});
+  const { run } = fakeRunner({
+    "https://a.example.com/gone": scraplingPage("https://a.example.com/gone", "", { status: 404 }),
+    "https://a.example.com/cv.pdf": scraplingPage("https://a.example.com/cv.pdf", "%PDF", { contentType: "application/pdf" }),
+  });
+  const options = { python: "py", run, fetch: fetcher, lookup: publicLookup };
+  await assert.rejects(readWithScrapling("https://a.example.com/gone", options), hasCode("http_error"));
+  await assert.rejects(readWithScrapling("https://a.example.com/cv.pdf", options), hasCode("not_html"));
+});
+
+test("readPage falls back to the built-in fetcher when Python or Scrapling is missing or fails", async () => {
+  const routes = { "https://jobs.example.com/1": html("<h1>Kasir</h1>") };
+  const missing = fakeFetch(routes);
+  const previous = process.env.SCRAPLING_PYTHON;
+  delete process.env.SCRAPLING_PYTHON;
+  try {
+    assert.equal((await readPage("https://jobs.example.com/1", { fetch: missing.fetcher, lookup: publicLookup, run: async () => assert.fail() })).text, "Kasir");
+  } finally {
+    if (previous !== undefined) process.env.SCRAPLING_PYTHON = previous;
+  }
+  const notInstalled = fakeFetch(routes);
+  const { run } = fakeRunner({ "https://jobs.example.com/1": '{"error":"Scrapling is not installed"}' });
+  assert.equal((await readPage("https://jobs.example.com/1", { python: "py", run, fetch: notInstalled.fetcher, lookup: publicLookup })).text, "Kasir");
+  const crashed = fakeFetch(routes);
+  const crash: Runner = async () => Promise.reject(new ScraplingUnavailable("spawn py ENOENT"));
+  assert.equal((await readPage("https://jobs.example.com/1", { python: "py", run: crash, fetch: crashed.fetcher, lookup: publicLookup })).text, "Kasir");
+});
+
+test("readPage keeps a definite answer from Scrapling instead of retrying with the built-in fetcher", async () => {
+  const { fetcher, pages } = fakeFetch({});
+  const { run } = fakeRunner({ "https://a.example.com/gone": scraplingPage("https://a.example.com/gone", "", { status: 404 }) });
+  await assert.rejects(readPage("https://a.example.com/gone", { python: "py", run, fetch: fetcher, lookup: publicLookup }), hasCode("http_error"));
+  const slow: Runner = async () => Promise.reject(new ScrapeError("timeout", "The page took too long to answer"));
+  await assert.rejects(readPage("https://a.example.com/slow", { python: "py", run: slow, fetch: fetcher, lookup: publicLookup }), hasCode("timeout"));
+  assert.deepEqual(pages(), []);
+});
+
+test("interview sources may read a LinkedIn job ad link but never LinkedIn for anything else", () => {
+  assert.equal(isForbiddenSite("https://www.linkedin.com/jobs/view/123", true), false);
+  assert.equal(isForbiddenSite("https://www.linkedin.com/jobs/view/123"), true);
+  assert.equal(isForbiddenSite("https://www.linkedin.com/in/rina", true), true);
+  assert.equal(isForbiddenSite("https://www.glassdoor.com/x", true), true);
 });
