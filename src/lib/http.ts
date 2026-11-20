@@ -5,13 +5,19 @@ export type Lang = "id" | "en";
 export const MAX_UPLOAD = 8 * 1024 * 1024;
 export const UPLOAD_TYPES = ["application/pdf", "image/png", "image/jpeg", "image/webp"];
 
-export type ErrorCode = "fileMissing" | "fileType" | "fileSize" | "busy" | "unknown";
+export type ErrorCode = "fileMissing" | "fileType" | "fileSize" | "signIn" | "busy" | "unknown";
 
 export class BadRequest extends Error {
   code?: ErrorCode;
   constructor(message: string, code?: ErrorCode) {
     super(message);
     this.code = code;
+  }
+}
+
+export class SignInNeeded extends BadRequest {
+  constructor() {
+    super("Sign in first", "signIn");
   }
 }
 
@@ -30,10 +36,10 @@ export function handle(fn: (req: Request) => Promise<unknown>) {
     try {
       return Response.json(await fn(req));
     } catch (e) {
-      const status = e instanceof BadRequest ? 400 : 500;
+      const status = e instanceof SignInNeeded ? 401 : e instanceof BadRequest ? 400 : 500;
       if (status === 500) console.error(e);
       const busy = e instanceof Error && e.message === AI_BUSY_MESSAGE;
-      const safeToShow = e instanceof Error && (status === 400 || busy);
+      const safeToShow = e instanceof BadRequest || busy;
       const message = safeToShow ? e.message : "Something went wrong. Try again.";
       const code = e instanceof BadRequest ? e.code : busy ? "busy" : "unknown";
       return Response.json(code ? { error: message, code } : { error: message }, { status });
