@@ -9,7 +9,7 @@ import { MAX_PUBLIC_PAGES, collectInterviewSources, companyLinks, isForbiddenSit
 import { MAX_AD_CHARS, analyzeAd, keepGroundedFlags, parseAdRequest, readAd } from "../src/app/api/check-ad/analyze-ad.ts";
 import { BadRequest } from "../src/lib/http.ts";
 import { strings } from "../src/lib/i18n.ts";
-import { GENERATED, MAX_PROFILE_CHARS, MAX_QUESTIONS, interviewParts, interviewPrompt, parseInterviewRequest, prepareInterview } from "../src/app/api/interview/prepare-interview.ts";
+import { GENERATED, MAX_PORTFOLIO_CHARS, MAX_PROFILE_CHARS, MAX_QUESTIONS, interviewParts, interviewPrompt, parseInterviewForm, parseInterviewRequest, prepareInterview } from "../src/app/api/interview/prepare-interview.ts";
 import type { generateJson } from "../src/lib/ai/gemini.ts";
 
 const hasCode = (code: ScrapeErrorCode) => (error: unknown) => error instanceof ScrapeError && error.code === code;
@@ -560,4 +560,70 @@ test("readAd explains an unreadable link in the language of the request", async 
   const errors = strings.en.lowongan.errors;
   await assert.rejects(readAd({ url: "https://jobs.example.com/", lang: "en", mode: "fast" }, disallowed), { message: `${errors.readLink} ${errors.scrape.robots_disallowed}` });
   await assert.rejects(readAd({ text: "short", lang: "en", mode: "fast" }), { message: errors.tooShort });
+});
+
+const SAMPLE_CV = {
+  name: "Rina Wijaya",
+  headline: "Final-year Informatics student",
+  education: [{ school: "Universitas Ciputra", degree: "S1 Informatika", years: "2022 - 2026" }],
+  experience: [{ role: "Web intern", organisation: "PT Contoh", years: "2025", highlights: ["Built a booking site"] }],
+  skills: ["React"],
+  languages: ["English"],
+};
+
+const NO_SOURCES = async () => ({ jobText: "", companyText: "", questions: [], failed: [] });
+
+test("parseInterviewForm reads text fields, the profile CV and a checked portfolio file", () => {
+  const form = new FormData();
+  form.append("role", " Web Developer ");
+  form.append("lang", "en");
+  form.append("cv", JSON.stringify({ ...SAMPLE_CV, skills: ["x".repeat(400)] }));
+  form.append("portfolio", new File(["%PDF-1.4"], "portfolio.pdf", { type: "application/pdf" }));
+  const input = parseInterviewForm(form);
+  assert.equal(input.role, "Web Developer");
+  assert.equal(input.lang, "en");
+  assert.equal(input.cv?.skills[0].length, 300);
+  assert.equal(input.portfolioFile?.name, "portfolio.pdf");
+
+  const broken = new FormData();
+  broken.append("role", "Admin");
+  broken.append("cv", "{not json");
+  assert.equal(parseInterviewForm(broken).cv, undefined);
+  assert.equal(parseInterviewForm(broken).portfolioFile, undefined);
+
+  const wrongType = new FormData();
+  wrongType.append("role", "Admin");
+  wrongType.append("portfolio", new File(["x"], "notes.txt", { type: "text/plain" }));
+  assert.throws(() => parseInterviewForm(wrongType), (e) => e instanceof BadRequest && e.code === "fileType");
+});
+
+test("prepareInterview sends the CV without the name and the portfolio link and file", async () => {
+  let text = "";
+  let partCount = 0;
+  const generate = (async (_schema: unknown, _system: string, parts: { text?: string; inlineData?: { mimeType: string } }[]) => {
+    text = parts[0].text ?? "";
+    partCount = parts.length;
+    assert.equal(parts[1]?.inlineData?.mimeType, "application/pdf");
+    return { role: "Web Developer", company: "", candidateSnapshot: "s", questions: [], questionsToAskThem: [] };
+  }) as unknown as typeof generateJson;
+  const fetch = async (url: string) => ({ url, text: `Project: Booking site for a café. ${"y".repeat(MAX_PORTFOLIO_CHARS)}` });
+  const req = parseInterviewRequest({ role: "Web Developer", cv: SAMPLE_CV, portfolioUrl: "https://rina.example.com/" });
+  const portfolioFile = new File(["%PDF-1.4"], "portfolio.pdf", { type: "application/pdf" });
+  const out = await prepareInterview({ ...req, portfolioFile }, { collect: NO_SOURCES, generate, fetch });
+
+  assert.equal(partCount, 2);
+  assert.match(text, /<cv>\n.*Final-year Informatics student/);
+  assert.doesNotMatch(text, /Rina Wijaya/);
+  assert.match(text, /<portfolio>\nProject: Booking site for a café/);
+  assert.ok(text.length < MAX_PORTFOLIO_CHARS + 2_000);
+  assert.deepEqual(out.unreadSources, []);
+});
+
+test("prepareInterview skips a portfolio link that is blocked or unreadable and reports it", async () => {
+  const generate = (async () => ({ role: "Admin", company: "", candidateSnapshot: "s", questions: [], questionsToAskThem: [] })) as unknown as typeof generateJson;
+  const failing = async () => Promise.reject(new ScrapeError("timeout", "The page took too long to answer"));
+  const linkedin = await prepareInterview(parseInterviewRequest({ role: "Admin", portfolioUrl: "https://www.linkedin.com/in/rina" }), { collect: NO_SOURCES, generate, fetch: async () => assert.fail() });
+  assert.deepEqual(linkedin.unreadSources, [{ url: "https://www.linkedin.com/in/rina", reason: "This site does not allow automated reading" }]);
+  const slow = await prepareInterview(parseInterviewRequest({ role: "Admin", portfolioUrl: "https://slow.example.com/" }), { collect: NO_SOURCES, generate, fetch: failing });
+  assert.deepEqual(slow.unreadSources, [{ url: "https://slow.example.com/", reason: "The page took too long to answer" }]);
 });

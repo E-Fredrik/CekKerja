@@ -1,19 +1,24 @@
 "use client";
 
+import Link from "next/link";
 import { useState, type FormEvent } from "react";
 import type { InterviewPrep } from "@/app/api/interview/prepare-interview.ts";
 import type { Mode } from "@/lib/ai/gemini.ts";
 import type { InterviewQuestion } from "@/lib/ai/schemas.ts";
 import { Button } from "@/components/ui/Button.tsx";
 import { Field } from "@/components/ui/Field.tsx";
+import { FileDrop } from "@/components/ui/FileDrop.tsx";
 import { Notice } from "@/components/ui/Notice.tsx";
 import { Segmented } from "@/components/ui/Segmented.tsx";
 import { useLang } from "@/components/ui/lang.tsx";
 import { useCheck } from "@/components/ui/useCheck.ts";
+import { useCvProfile } from "@/components/profile/cv-store.ts";
 
 const SURFACE = "bg-surface rounded-lg shadow-(--shadow-surface) p-6 sm:p-8";
 
-const EMPTY = { role: "", company: "", jobText: "", jobUrl: "", companyUrl: "", profile: "" };
+const EMPTY = { role: "", company: "", jobText: "", jobUrl: "", companyUrl: "", profile: "", portfolioUrl: "" };
+
+const LINK = "text-callout font-[650] text-sign-blue underline underline-offset-4 hover:no-underline";
 
 const isWebLink = (url: string) => /^https?:\/\//i.test(url);
 
@@ -22,18 +27,26 @@ export default function InterviewPage() {
   const { state, run, reset } = useCheck<InterviewPrep>("/api/interview");
   const [form, setForm] = useState(EMPTY);
   const [mode, setMode] = useState<Mode>("fast");
+  const [portfolioFile, setPortfolioFile] = useState<File | null>(null);
+  const { cv, signedIn } = useCvProfile();
   const pending = state.status === "pending";
 
   const set = (key: keyof typeof EMPTY) => (e: { target: { value: string } }) => setForm({ ...form, [key]: e.target.value });
 
   function submit(e: FormEvent) {
     e.preventDefault();
-    const filled = Object.fromEntries(Object.entries(form).map(([k, v]) => [k, v.trim() || undefined]));
-    run({ ...filled, lang, mode });
+    const body = new FormData();
+    for (const [key, value] of Object.entries(form)) if (value.trim()) body.append(key, value.trim());
+    if (cv) body.append("cv", JSON.stringify(cv));
+    if (portfolioFile) body.append("portfolio", portfolioFile);
+    body.append("lang", lang);
+    body.append("mode", mode);
+    run(body);
   }
 
   function startOver() {
     setForm(EMPTY);
+    setPortfolioFile(null);
     reset();
   }
 
@@ -54,6 +67,29 @@ export default function InterviewPage() {
           <Field type="url" inputMode="url" label={t.interview.jobUrlLabel} placeholder="https://" value={form.jobUrl} onChange={set("jobUrl")} disabled={pending} />
           <Field type="url" inputMode="url" label={t.interview.companyUrlLabel} hint={t.interview.companyUrlHint} placeholder="https://" value={form.companyUrl} onChange={set("companyUrl")} disabled={pending} />
           <Field as="textarea" label={t.interview.profileLabel} hint={t.interview.profileHint} value={form.profile} onChange={set("profile")} rows={4} disabled={pending} />
+          <p className="text-callout text-ink-soft">
+            {cv ? (
+              <>
+                {t.interview.cvUsed} <span className="text-ink">{cv.headline || cv.name}</span>{" "}
+                <Link href="/profil" className={LINK}>
+                  {t.interview.toProfile}
+                </Link>
+              </>
+            ) : (
+              <>
+                {signedIn ? t.interview.cvMissing : t.interview.cvSignIn}{" "}
+                <Link href={signedIn ? "/profil" : "/masuk"} className={LINK}>
+                  {signedIn ? t.interview.toProfile : t.interview.toSignIn}
+                </Link>
+              </>
+            )}
+          </p>
+          <fieldset className="flex flex-col gap-3" disabled={pending}>
+            <legend className="text-[16px] font-[600] text-ink mb-1">{t.interview.portfolioTitle}</legend>
+            <p className="text-callout text-ink-soft">{t.interview.portfolioHint}</p>
+            <FileDrop onFile={setPortfolioFile} disabled={pending} />
+            <Field type="url" inputMode="url" label={t.interview.portfolioUrlLabel} placeholder="https://" value={form.portfolioUrl} onChange={set("portfolioUrl")} disabled={pending} />
+          </fieldset>
           <div className="flex flex-col gap-2">
             <Segmented
               label={t.mode.label}
