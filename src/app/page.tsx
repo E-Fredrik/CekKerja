@@ -1,20 +1,16 @@
 "use client";
 
-import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useMotionValue, useMotionValueEvent, useReducedMotion, useScroll } from "motion/react";
 import { useRef, useState } from "react";
 import { CountUp } from "@/components/landing/CountUp.tsx";
+import { HeroStage } from "@/components/landing/HeroStage.tsx";
 import { SIGNAL_ORDER, litLamp } from "@/components/landing/signal.ts";
 import { TiltedCard } from "@/components/landing/TiltedCard.tsx";
 import { VerdictLegend } from "@/components/landing/VerdictLegend.tsx";
 import { Finding } from "@/components/ui/Finding.tsx";
 import { SummaryPlate } from "@/components/ui/SummaryPlate.tsx";
 import { useLang } from "@/components/ui/lang.tsx";
-
-const TrafficLight3D = dynamic(() => import("@/components/landing/TrafficLight3D.tsx").then((m) => m.TrafficLight3D), {
-  ssr: false,
-});
 
 const PILL_PRIMARY =
   "inline-flex items-center justify-center h-11 px-[22px] text-[16px] font-[650] rounded-full bg-sign-blue text-on-sign-blue hover:ring-4 hover:ring-brand-wash active:scale-[0.98] transition-all";
@@ -62,9 +58,11 @@ export default function Home() {
             </div>
           </header>
 
-          <div className="h-[200px] sm:h-[420px] lg:h-[min(640px,82svh)] -order-1 lg:order-none" aria-hidden="true">
-            <TrafficLight3D progress={reduceMotion ? still : scrollYProgress} />
-          </div>
+          <HeroStage
+            progress={reduceMotion ? still : scrollYProgress}
+            verdict={SIGNAL_ORDER[reduceMotion ? 0 : lit]}
+            reduceMotion={!!reduceMotion}
+          />
         </div>
       </section>
 

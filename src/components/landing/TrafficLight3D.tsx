@@ -16,7 +16,7 @@ import {
 } from "three";
 import { litLamp } from "@/components/landing/signal.ts";
 
-type Palette = { housing: string; pole: string; rim: string; red: string; yellow: string; green: string };
+type Palette = { housing: string; pole: string; rim: string; border: string; red: string; yellow: string; green: string };
 
 const BODY = { width: 1.12, height: 3.05, radius: 0.24, depth: 0.62, bevel: 0.05 };
 const FACE_Z = BODY.depth / 2 + BODY.bevel;
@@ -27,6 +27,8 @@ const LAMPS = [
   { key: "yellow", y: 0 },
   { key: "green", y: -0.98 },
 ] as const;
+const PLATE = { margin: 0.24, border: 0.09, depth: 0.04 };
+const WALL_Z = -1.5;
 const START_ANGLE = -0.45;
 const SETTLE_RATE = 9;
 
@@ -37,6 +39,7 @@ function readPalette(): Palette {
     housing: token("--housing"),
     pole: token("--line-strong"),
     rim: token("--on-shell-soft"),
+    border: token("--on-shell"),
     red: token("--stop"),
     yellow: token("--warn"),
     green: token("--go"),
@@ -83,6 +86,17 @@ function SignalHead({ progress, palette }: { progress: MotionValue<number>; pale
     geometry.center();
     return geometry;
   }, []);
+  const plate = useMemo(() => {
+    const extrude = (inset: number) => {
+      const geometry = new ExtrudeGeometry(
+        roundedRect(BODY.width + PLATE.margin * 2 - inset * 2, BODY.height + PLATE.margin * 2 - inset * 2, BODY.radius + PLATE.margin - inset),
+        { depth: PLATE.depth, bevelEnabled: false, curveSegments: 24 },
+      );
+      geometry.center();
+      return geometry;
+    };
+    return { border: extrude(0), face: extrude(PLATE.border) };
+  }, []);
   const lens = useMemo(() => new SphereGeometry(LENS_RADIUS, 48, 16, 0, Math.PI * 2, 0, Math.PI / 2), []);
   const hood = useMemo(
     () => new CylinderGeometry(HOOD.radius, HOOD.radius, HOOD.length, 48, 1, true, Math.PI / 2 - HOOD.wrap, Math.PI + HOOD.wrap * 2),
@@ -124,11 +138,19 @@ function SignalHead({ progress, palette }: { progress: MotionValue<number>; pale
   });
 
   return (
-    <group position={[0, 0.55, 0]}>
+    <group position={[0, 1.55, 0]}>
       <group ref={head} rotation={[0, START_ANGLE, 0]}>
-        <mesh geometry={body}>
+        <mesh geometry={body} castShadow>
           <meshStandardMaterial color={palette.housing} roughness={0.42} metalness={0.25} />
         </mesh>
+        <mesh geometry={plate.border} castShadow>
+          <meshStandardMaterial color={palette.border} roughness={0.35} />
+        </mesh>
+        {[1, -1].map((side) => (
+          <mesh key={side} geometry={plate.face} position={[0, 0, side * 0.004]}>
+            <meshStandardMaterial color={palette.housing} roughness={0.7} />
+          </mesh>
+        ))}
         {[0, 1].map((side) => (
           <group key={side} rotation={[0, side * Math.PI, 0]}>
             {LAMPS.map((lamp, i) => (
@@ -152,7 +174,7 @@ function SignalHead({ progress, palette }: { progress: MotionValue<number>; pale
                     roughness={0.18}
                   />
                 </mesh>
-                <mesh geometry={hood} position={[0, 0, HOOD.length / 2]} rotation={[Math.PI / 2, 0, 0]}>
+                <mesh geometry={hood} position={[0, 0, HOOD.length / 2]} rotation={[Math.PI / 2, 0, 0]} castShadow>
                   <meshStandardMaterial color={palette.housing} roughness={0.5} metalness={0.2} side={DoubleSide} />
                 </mesh>
               </group>
@@ -161,11 +183,11 @@ function SignalHead({ progress, palette }: { progress: MotionValue<number>; pale
         ))}
         <pointLight ref={lampLight} position={[0, LAMPS[0].y + HOOD.radius * 0.8, FACE_Z + 0.3]} distance={2} decay={2} intensity={1.4} />
       </group>
-      <mesh position={[0, -BODY.height / 2 - 0.12, 0]}>
+      <mesh position={[0, -BODY.height / 2 - 0.12, 0]} castShadow>
         <boxGeometry args={[0.42, 0.24, 0.42]} />
         <meshStandardMaterial color={palette.housing} roughness={0.5} metalness={0.3} />
       </mesh>
-      <mesh position={[0, -BODY.height / 2 - 4.2, 0]}>
+      <mesh position={[0, -BODY.height / 2 - 4.2, 0]} castShadow>
         <cylinderGeometry args={[0.12, 0.12, 8, 32]} />
         <meshStandardMaterial color={palette.pole} roughness={0.55} metalness={0.45} />
       </mesh>
@@ -173,17 +195,33 @@ function SignalHead({ progress, palette }: { progress: MotionValue<number>; pale
   );
 }
 
-export function TrafficLight3D({ progress }: { progress: MotionValue<number> }) {
+export function TrafficLight3D({ progress, onReady }: { progress: MotionValue<number>; onReady?: () => void }) {
   const palette = useMemo(() => readPalette(), []);
   return (
     <Canvas
       frameloop="demand"
+      shadows="soft"
       dpr={[1, 1.75]}
-      camera={{ position: [0, 0.35, 9.4], fov: 30 }}
+      camera={{ position: [0, 0.6, 14], fov: 30 }}
       gl={{ antialias: true, alpha: true }}
+      onCreated={() => requestAnimationFrame(() => onReady?.())}
     >
       <hemisphereLight args={[palette.rim, palette.housing, 1.1]} />
-      <directionalLight position={[4, 6, 6]} intensity={2.2} />
+      <directionalLight
+        position={[4, 6, 6]}
+        intensity={2.2}
+        castShadow
+        shadow-mapSize={[1024, 1024]}
+        shadow-radius={6}
+        shadow-camera-left={-5}
+        shadow-camera-right={5}
+        shadow-camera-top={6}
+        shadow-camera-bottom={-6}
+      />
+      <mesh position={[0, 0, WALL_Z]} receiveShadow>
+        <planeGeometry args={[30, 30]} />
+        <shadowMaterial opacity={0.38} />
+      </mesh>
       <directionalLight position={[-5, 3, -4]} intensity={3} color={palette.rim} />
       <directionalLight position={[5, -1, -3]} intensity={1.4} color={palette.rim} />
       <SignalHead progress={progress} palette={palette} />
