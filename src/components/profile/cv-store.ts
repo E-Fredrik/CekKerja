@@ -1,51 +1,62 @@
 "use client";
 
-import { useCallback, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useSession } from "@/components/auth/session.tsx";
-import { parseStoredCv, trimCv, type CvProfile } from "@/lib/cv/profile.ts";
+import { CvProfile } from "@/lib/cv/profile.ts";
 
-const listeners = new Set<() => void>();
+const LEGACY_PREFIX = "ck-cv:";
 
-const keyFor = (email: string) => `ck-cv:${email.toLowerCase()}`;
+type Loaded = { email: string; cv: CvProfile | null };
 
-function subscribe(callback: () => void) {
-  listeners.add(callback);
-  const onStorage = (event: StorageEvent) => {
-    if (event.key?.startsWith("ck-cv:")) callback();
-  };
-  window.addEventListener("storage", onStorage);
-  return () => {
-    listeners.delete(callback);
-    window.removeEventListener("storage", onStorage);
-  };
+function dropLegacyCopies() {
+  try {
+    Object.keys(localStorage)
+      .filter((key) => key.startsWith(LEGACY_PREFIX))
+      .forEach((key) => localStorage.removeItem(key));
+  } catch {}
 }
 
-const notify = () => listeners.forEach((callback) => callback());
+const parseCv = (value: unknown): CvProfile | null => {
+  const parsed = CvProfile.safeParse(value);
+  return parsed.success ? parsed.data : null;
+};
 
 export function useCvProfile() {
-  const { user } = useSession();
+  const { user, ready } = useSession();
   const email = user?.email ?? null;
-  const raw = useSyncExternalStore(
-    subscribe,
-    () => (email ? localStorage.getItem(keyFor(email)) : null),
-    () => null,
-  );
-  const cv = parseStoredCv(raw);
+  const [loaded, setLoaded] = useState<Loaded | null>(null);
+
+  useEffect(() => {
+    dropLegacyCopies();
+    if (!email) return;
+    let active = true;
+    fetch("/api/cv", { cache: "no-store" })
+      .then((res) => (res.ok ? res.json() : null))
+      .catch(() => null)
+      .then((data) => {
+        if (active) setLoaded({ email, cv: parseCv(data?.cv) });
+      });
+    return () => {
+      active = false;
+    };
+  }, [email]);
+
+  const current = email && loaded?.email === email ? loaded : null;
 
   const saveCv = useCallback(
-    (next: CvProfile) => {
-      if (!email) return;
-      localStorage.setItem(keyFor(email), JSON.stringify(trimCv(next)));
-      notify();
+    (next: unknown) => {
+      if (email) setLoaded({ email, cv: parseCv(next) });
     },
     [email],
   );
 
-  const clearCv = useCallback(() => {
-    if (!email) return;
-    localStorage.removeItem(keyFor(email));
-    notify();
+  const clearCv = useCallback(async (): Promise<boolean> => {
+    if (!email) return false;
+    const res = await fetch("/api/cv", { method: "DELETE" }).catch(() => null);
+    if (!res?.ok) return false;
+    setLoaded({ email, cv: null });
+    return true;
   }, [email]);
 
-  return { cv, signedIn: email !== null, saveCv, clearCv };
+  return { cv: current?.cv ?? null, signedIn: email !== null, loading: !ready || (email !== null && !current), saveCv, clearCv };
 }
