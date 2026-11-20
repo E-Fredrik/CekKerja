@@ -42,7 +42,7 @@ export function NavBar() {
     setHidden(y > 80 && y > (scrollY.getPrevious() ?? 0));
   });
   const pathname = usePathname();
-  const { user, signOut } = useSession();
+  const { user, ready, signOut } = useSession();
 
   const links = user
     ? [
@@ -115,7 +115,7 @@ export function NavBar() {
               inverse
               label="Pilih bahasa / Choose language"
             />
-            {user ? (
+            {!ready ? null : user ? (
               <>
                 <Link
                   href="/profil"

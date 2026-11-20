@@ -100,6 +100,15 @@ const id = {
       addCase: "Tambah huruf besar dan huruf kecil.",
       addNumberOrSymbol: "Tambah angka atau simbol.",
     },
+    serverErrors: {
+      invalidCredentials: "Email atau kata sandi salah. Coba lagi.",
+      emailTaken: "Email ini sudah terdaftar. Masuk dengan email ini, atau pakai email lain.",
+      weakPassword: "Kata sandi ini ditolak karena terlalu lemah. Buat yang lebih kuat.",
+      rateLimited: "Terlalu banyak percobaan. Tunggu beberapa menit, lalu coba lagi.",
+      emailNotConfirmed: "Akun ini belum aktif. Hubungi kami jika masalah ini berlanjut.",
+      notConfigured: "Akun belum bisa dipakai di server ini. Coba lagi nanti.",
+      unknown: "Ada masalah saat menghubungi server akun. Coba lagi sebentar lagi.",
+    },
     errors: {
       nameRequired: "Tulis nama kamu.",
       statusRequired: "Pilih salah satu status.",
@@ -457,6 +466,15 @@ const en: Dict = {
       notCommon: "This password is too common. Pick one that is harder to guess.",
       addCase: "Add upper and lower case letters.",
       addNumberOrSymbol: "Add a number or a symbol.",
+    },
+    serverErrors: {
+      invalidCredentials: "Wrong email or password. Try again.",
+      emailTaken: "This email already has an account. Sign in with it, or use another email.",
+      weakPassword: "This password was rejected as too weak. Choose a stronger one.",
+      rateLimited: "Too many attempts. Wait a few minutes, then try again.",
+      emailNotConfirmed: "This account is not active yet. Contact us if this keeps happening.",
+      notConfigured: "Accounts are not available on this server yet. Try again later.",
+      unknown: "Something went wrong reaching the account server. Try again shortly.",
     },
     errors: {
       nameRequired: "Enter your name.",

@@ -5,11 +5,13 @@ import { useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "motion/react";
 import { useId, useRef, useState, type FormEvent } from "react";
 import { PasswordStrength } from "@/components/auth/PasswordStrength.tsx";
-import { useSession } from "@/components/auth/session.tsx";
 import { Button } from "@/components/ui/Button.tsx";
 import { Field } from "@/components/ui/Field.tsx";
+import { Notice } from "@/components/ui/Notice.tsx";
 import { useLang } from "@/components/ui/lang.tsx";
-import { userFromInput } from "@/lib/auth/session-user.ts";
+import { safeNextPath } from "@/lib/auth/routes.ts";
+import { authServerError, type AuthServerError } from "@/lib/auth/session-user.ts";
+import { browserSupabase } from "@/lib/db/browser.ts";
 import {
   AUTH_STEPS,
   USER_STATUSES,
@@ -38,7 +40,6 @@ function FieldError({ id, message }: { id: string; message: string }) {
 
 export function AuthForm({ mode }: { mode: AuthMode }) {
   const { t } = useLang();
-  const { signIn } = useSession();
   const router = useRouter();
   const reduceMotion = useReducedMotion();
   const a = t.auth;
@@ -49,6 +50,8 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
   const [input, setInput] = useState<AuthInput>(EMPTY);
   const [tried, setTried] = useState(false);
   const [step, setStep] = useState(0);
+  const [pending, setPending] = useState(false);
+  const [serverError, setServerError] = useState<AuthServerError | null>(null);
   const steps = AUTH_STEPS[mode];
   const current = steps[step];
   const last = step === steps.length - 1;
@@ -67,12 +70,39 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
 
   function goTo(next: number) {
     setTried(false);
+    setServerError(null);
     setStep(next);
     focusFirst("[data-step] input:not([hidden])");
   }
 
+  async function finish() {
+    const supabase = browserSupabase();
+    if (!supabase) {
+      setServerError("notConfigured");
+      return;
+    }
+    setPending(true);
+    setServerError(null);
+    const email = input.email.trim();
+    const { data, error } = signup
+      ? await supabase.auth.signUp({
+          email,
+          password: input.password,
+          options: { data: { name: input.name.trim(), status: input.status } },
+        })
+      : await supabase.auth.signInWithPassword({ email, password: input.password });
+    if (error || !data.session) {
+      setPending(false);
+      setServerError(error ? authServerError(error) : "emailNotConfirmed");
+      return;
+    }
+    router.replace(safeNextPath(new URLSearchParams(window.location.search).get("next")));
+    router.refresh();
+  }
+
   function submit(e: FormEvent) {
     e.preventDefault();
+    if (pending) return;
     setTried(true);
     if (Object.keys(validateStep(mode, step, input)).length > 0) {
       focusFirst("input[aria-invalid='true'], [aria-invalid='true'] input");
@@ -82,8 +112,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
       goTo(step + 1);
       return;
     }
-    signIn(userFromInput(mode, input));
-    router.push("/");
+    void finish();
   }
 
   const stepOf = (name: (typeof steps)[number]["name"]) => steps.findIndex((s) => s.name === name);
@@ -261,13 +290,19 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
         )}
       </motion.div>
 
+      {serverError && (
+        <Notice variant={serverError === "rateLimited" ? "limit" : "error"}>{a.serverErrors[serverError]}</Notice>
+      )}
+
       <div className={`flex items-center gap-3 pt-1 ${step > 0 ? "justify-between" : "justify-end"}`}>
         {step > 0 && (
-          <Button type="button" variant="quiet" onClick={() => goTo(step - 1)}>
+          <Button type="button" variant="quiet" disabled={pending} onClick={() => goTo(step - 1)}>
             {a.back}
           </Button>
         )}
-        <Button type="submit">{!last ? a.next : signup ? a.createAccount : a.login}</Button>
+        <Button type="submit" pending={pending}>
+          {!last ? a.next : signup ? a.createAccount : a.login}
+        </Button>
       </div>
 
       <p className="text-callout text-ink-soft text-center">

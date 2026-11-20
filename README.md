@@ -61,6 +61,7 @@ Status is updated with every feature pull request: Not started, In progress, Don
 - CV match ready: after a job ad check, a signed-in user with a CV in their profile sees each skill, education and experience requirement marked met, partly met or not shown yet, with the words from their CV that show it and a tip, plus a match percentage counted by plain code rather than by the AI.
 - Interview prep uses your CV and portfolio: a signed-in user's CV from their profile is used automatically (without their name), and an optional portfolio PDF, image or link lets the practice questions name their own projects; a portfolio link that cannot be read is listed and skipped.
 - Scrapling page reader ready: job ad, company and portfolio links are read through Scrapling, so public LinkedIn job ad pages (`linkedin.com/jobs/view/...`) can be checked too. Only those LinkedIn pages are read, signed out and without cookies; profiles, people and search pages, Glassdoor, Indeed and social media are refused, and every other page still respects robots.txt, private-address blocking and time and size limits. When Python or Scrapling is not available, the built-in reader takes over.
+- Real accounts with Supabase: signing up and signing in now create and open a real account instead of a demo kept in the browser, the job ad, contract and interview checks ask you to sign in first and bring you back to the page you wanted afterwards, and signing out ends the session everywhere on that browser.
 
 ## Contributors
 
@@ -68,7 +69,7 @@ Status is updated with every feature pull request: Not started, In progress, Don
 |---|---|
 | **Elifele Fredrik Imanuel Jelifta** ([@E-Fredrik](https://github.com/E-Fredrik)), maintainer | Project setup and team workflow; the design system (road-sign verdicts, traffic-light summary, colour and type tokens); the Gemini client with JSON schemas and model fallback; the labour rule list with plain-code wage and duration checks; the contract check API and page, with the fast and thorough AI modes and the email form; the profile page where a CV is uploaded once and read into a profile; the switch that lets every check run on Claude instead of Gemini; CI/CD with GitHub Actions and deployment to the server; the 3D traffic light, bracket cursor and auto-hiding top bar; code review and integration fixes across the project. |
 | **Dave Tristian Nurcahyo** ([@Dave03062006](https://github.com/Dave03062006)) | The safe page fetcher (robots.txt, blocked private addresses, time and size limits) and text extraction; the job ad check API and page; the interview question sources; the interview prep API and page that turn them into tailored practice questions; error messages for both in Indonesian and English; the CV match that compares a checked job ad with the CV in your profile; interview prep that uses the CV from your profile and an optional portfolio file or link to ask about your own projects; the Scrapling page reader that also reads public LinkedIn job ads, with the built-in reader as fallback. |
-| **Kenneth Jonathan Halim** ([@Kiyono-kouji](https://github.com/Kiyono-kouji)) | The app shell, top bar and language toggle; the shared form and result components (verdict signs, traffic light, summary plate, findings); the web mailer with Nodemailer and its email templates; the landing page with the verdict legend and the remodelled 3D traffic light, now standing on a blue road-sign stage with a sample clause for each lamp; the sign in and sign up pages with the demo session; the email result button, which can also send interview practice results; the Profile link in the top bar; step-by-step sign up and sign in with a password strength meter. |
+| **Kenneth Jonathan Halim** ([@Kiyono-kouji](https://github.com/Kiyono-kouji)) | The app shell, top bar and language toggle; the shared form and result components (verdict signs, traffic light, summary plate, findings); the web mailer with Nodemailer and its email templates; the landing page with the verdict legend and the remodelled 3D traffic light, now standing on a blue road-sign stage with a sample clause for each lamp; the sign in and sign up pages; the email result button, which can also send interview practice results; the Profile link in the top bar; step-by-step sign up and sign in with a password strength meter; real accounts with Supabase, so only signed-in users can open the three checks. |
 
 ## Tech stack
 
@@ -76,7 +77,7 @@ Status is updated with every feature pull request: Not started, In progress, Don
 - **AI:** Gemini API (`@google/genai`), with zod-validated JSON output
 - **Scraping:** cheerio, with robots.txt and safe-URL checks
 - **Email:** Nodemailer over SMTP
-- **Database and auth:** Supabase
+- **Database and auth:** Supabase (`@supabase/ssr`, sessions in cookies refreshed by the Next.js proxy)
 - **Payments:** Midtrans Snap (sandbox)
 
 ## Getting started

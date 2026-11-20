@@ -1,7 +1,9 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { AUTH_STEPS, MIN_PASSWORD_LENGTH, validateAuth, validateStep, type AuthInput } from "../src/lib/auth/validate.ts";
-import { parseStoredUser, userFromInput } from "../src/lib/auth/session-user.ts";
+import { authServerError, userFromAuth } from "../src/lib/auth/session-user.ts";
+import { isGuestOnlyPath, isProtectedPath, safeNextPath } from "../src/lib/auth/routes.ts";
+import { supabaseConfig } from "../src/lib/db/config.ts";
 import { MIN_SIGNUP_STRENGTH, isCommonPassword, passwordStrength } from "../src/lib/auth/password-strength.ts";
 
 const validSignup: AuthInput = {
@@ -106,37 +108,68 @@ test("common passwords are caught case-insensitively, as are passwords of one or
   assert.equal(isCommonPassword("Rahasia#2026"), false);
 });
 
-test("the stored session user never contains the password and keeps the status", () => {
-  const user = userFromInput("signup", validSignup);
-  assert.deepEqual(user, { name: "Kenneth", email: "kenneth@example.com", status: "graduate" });
-  assert.doesNotMatch(JSON.stringify(user), /Rahasia/);
-});
-
-test("login uses the part before the at sign as the name", () => {
-  assert.deepEqual(userFromInput("login", { ...validSignup, name: "", email: " kenneth@example.com " }), {
-    name: "kenneth",
+test("a Supabase user becomes a session user with name and status from its profile", () => {
+  assert.deepEqual(userFromAuth({ email: "kenneth@example.com", user_metadata: { name: "Kenneth", status: "graduate" } }), {
+    name: "Kenneth",
     email: "kenneth@example.com",
+    status: "graduate",
   });
+  assert.deepEqual(userFromAuth({ email: " k@example.com ", user_metadata: {} }), { name: "k", email: "k@example.com" });
 });
 
-test("parseStoredUser accepts a valid user and rejects anything else", () => {
-  assert.deepEqual(parseStoredUser('{"name":"Kenneth","email":"k@example.com"}'), { name: "Kenneth", email: "k@example.com" });
-  assert.deepEqual(parseStoredUser('{"name":"K","email":"k@example.com","status":"student"}'), {
-    name: "K",
+test("userFromAuth ignores bad profile data and rejects a user without an email", () => {
+  assert.deepEqual(userFromAuth({ email: "k@example.com", user_metadata: { name: "  ", status: "admin", password: "secret" } }), {
+    name: "k",
     email: "k@example.com",
-    status: "student",
   });
-  for (const raw of [null, "", "not json", "null", "42", '"text"', "[]", '{"name":"Kenneth"}', '{"name":"","email":"k@example.com"}', '{"name":1,"email":"k@example.com"}']) {
-    assert.equal(parseStoredUser(raw), null, String(raw));
+  assert.deepEqual(userFromAuth({ email: "k@example.com", user_metadata: { name: "x".repeat(201) } }), { name: "k", email: "k@example.com" });
+  for (const user of [null, undefined, {}, { email: "" }, { email: null }, { email: "x".repeat(201) }]) {
+    assert.equal(userFromAuth(user), null, JSON.stringify(user));
   }
-  assert.equal(parseStoredUser(JSON.stringify({ name: "x".repeat(201), email: "k@example.com" })), null);
 });
 
-test("parseStoredUser drops extra fields such as a password and an unknown status", () => {
-  assert.deepEqual(parseStoredUser('{"name":"K","email":"k@example.com","password":"secret","status":"admin"}'), {
-    name: "K",
-    email: "k@example.com",
+test("Supabase auth errors map to messages the page can translate", () => {
+  assert.equal(authServerError({ code: "invalid_credentials", status: 400 }), "invalidCredentials");
+  assert.equal(authServerError({ code: "user_already_exists" }), "emailTaken");
+  assert.equal(authServerError({ code: "email_exists" }), "emailTaken");
+  assert.equal(authServerError({ code: "weak_password" }), "weakPassword");
+  assert.equal(authServerError({ code: "over_request_rate_limit" }), "rateLimited");
+  assert.equal(authServerError({ status: 429 }), "rateLimited");
+  assert.equal(authServerError({ code: "email_not_confirmed" }), "emailNotConfirmed");
+  assert.equal(authServerError({ code: "something_new", status: 500 }), "unknown");
+  assert.equal(authServerError(null), "unknown");
+});
+
+test("only the three tools need an account, and sign in pages are for guests", () => {
+  for (const path of ["/lowongan", "/kontrak", "/interview", "/kontrak/hasil"]) assert.equal(isProtectedPath(path), true, path);
+  for (const path of ["/", "/profil", "/masuk", "/kontrakan", "/api/check-contract"]) assert.equal(isProtectedPath(path), false, path);
+  assert.equal(isGuestOnlyPath("/masuk"), true);
+  assert.equal(isGuestOnlyPath("/daftar"), true);
+  assert.equal(isGuestOnlyPath("/daftarkan"), false);
+});
+
+test("safeNextPath only follows paths on this site", () => {
+  assert.equal(safeNextPath("/kontrak"), "/kontrak");
+  assert.equal(safeNextPath("/lowongan?url=x#top"), "/lowongan?url=x#top");
+  for (const raw of [null, undefined, "", "kontrak", "https://evil.example", "//evil.example", "/\\evil.example", "/a\nb", "/masuk", "/daftar?x=1", "/" + "a".repeat(600)]) {
+    assert.equal(safeNextPath(raw), "/", String(raw));
+  }
+});
+
+test("supabaseConfig needs both a https URL and a key", () => {
+  assert.deepEqual(supabaseConfig({ url: " https://abc.supabase.co ", key: " sb_publishable_x " }), {
+    url: "https://abc.supabase.co",
+    key: "sb_publishable_x",
   });
+  for (const env of [
+    { url: undefined, key: "k" },
+    { url: "https://abc.supabase.co", key: undefined },
+    { url: "https://abc.supabase.co", key: "  " },
+    { url: "http://abc.supabase.co", key: "k" },
+    { url: "abc.supabase.co", key: "k" },
+  ]) {
+    assert.equal(supabaseConfig(env), null, JSON.stringify(env));
+  }
 });
 
 test("signup has four steps and login two, covering every field the full check uses", () => {
