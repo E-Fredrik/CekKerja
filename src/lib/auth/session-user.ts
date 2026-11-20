@@ -1,6 +1,6 @@
-import type { AuthInput, AuthMode } from "./validate.ts";
+import { isUserStatus, type AuthInput, type AuthMode, type UserStatus } from "./validate.ts";
 
-export type SessionUser = { name: string; email: string };
+export type SessionUser = { name: string; email: string; status?: UserStatus };
 
 const MAX_FIELD_LENGTH = 200;
 
@@ -12,8 +12,9 @@ export function parseStoredUser(raw: string | null): SessionUser | null {
   try {
     const data: unknown = JSON.parse(raw);
     if (typeof data !== "object" || data === null) return null;
-    const { name, email } = data as Record<string, unknown>;
-    return isShortText(name) && isShortText(email) ? { name, email } : null;
+    const { name, email, status } = data as Record<string, unknown>;
+    if (!isShortText(name) || !isShortText(email)) return null;
+    return isUserStatus(status) ? { name, email, status } : { name, email };
   } catch {
     return null;
   }
@@ -21,6 +22,7 @@ export function parseStoredUser(raw: string | null): SessionUser | null {
 
 export function userFromInput(mode: AuthMode, input: AuthInput): SessionUser {
   const email = input.email.trim();
-  const name = mode === "signup" ? input.name.trim() : email.split("@")[0];
-  return { name, email };
+  if (mode === "login") return { name: email.split("@")[0], email };
+  const name = input.name.trim();
+  return isUserStatus(input.status) ? { name, email, status: input.status } : { name, email };
 }
