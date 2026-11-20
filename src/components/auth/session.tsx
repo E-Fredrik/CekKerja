@@ -1,60 +1,49 @@
 "use client";
 
-import { createContext, useCallback, useContext, useSyncExternalStore, type ReactNode } from "react";
-import { parseStoredUser, type SessionUser } from "@/lib/auth/session-user.ts";
+import { useRouter } from "next/navigation";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
+import { browserSupabase } from "@/lib/db/browser.ts";
+import { userFromAuth, type SessionUser } from "@/lib/auth/session-user.ts";
 
-const STORAGE_KEY = "ck-session";
-
-const listeners = new Set<() => void>();
-
-function subscribe(callback: () => void): () => void {
-  listeners.add(callback);
-  const onStorage = (event: StorageEvent) => {
-    if (event.key === STORAGE_KEY) callback();
-  };
-  window.addEventListener("storage", onStorage);
-  return () => {
-    listeners.delete(callback);
-    window.removeEventListener("storage", onStorage);
-  };
-}
-
-function getSnapshot(): string | null {
-  return localStorage.getItem(STORAGE_KEY);
-}
-
-function getServerSnapshot(): string | null {
-  return null;
-}
-
-function notify() {
-  listeners.forEach((callback) => callback());
-}
+const LEGACY_STORAGE_KEY = "ck-session";
 
 type SessionContextValue = {
   user: SessionUser | null;
-  signIn: (user: SessionUser) => void;
-  signOut: () => void;
+  ready: boolean;
+  signOut: () => Promise<void>;
 };
 
 const SessionContext = createContext<SessionContextValue | null>(null);
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const raw = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-  const user = parseStoredUser(raw);
+  const router = useRouter();
+  const [user, setUser] = useState<SessionUser | null>(null);
+  const [ready, setReady] = useState(false);
 
-  const signIn = useCallback((next: SessionUser) => {
-    const stored: SessionUser = { name: next.name.trim(), email: next.email.trim(), ...(next.status && { status: next.status }) };
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
-    notify();
+  useEffect(() => {
+    try {
+      localStorage.removeItem(LEGACY_STORAGE_KEY);
+    } catch {}
+    const supabase = browserSupabase();
+    if (!supabase) {
+      queueMicrotask(() => setReady(true));
+      return;
+    }
+    const { data } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(userFromAuth(session?.user));
+      setReady(true);
+    });
+    return () => data.subscription.unsubscribe();
   }, []);
 
-  const signOut = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEY);
-    notify();
-  }, []);
+  const signOut = useCallback(async () => {
+    await browserSupabase()?.auth.signOut();
+    setUser(null);
+    router.push("/");
+    router.refresh();
+  }, [router]);
 
-  return <SessionContext.Provider value={{ user, signIn, signOut }}>{children}</SessionContext.Provider>;
+  return <SessionContext.Provider value={{ user, ready, signOut }}>{children}</SessionContext.Provider>;
 }
 
 export function useSession(): SessionContextValue {

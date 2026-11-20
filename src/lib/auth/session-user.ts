@@ -1,28 +1,45 @@
-import { isUserStatus, type AuthInput, type AuthMode, type UserStatus } from "./validate.ts";
+import { isUserStatus, type UserStatus } from "./validate.ts";
 
 export type SessionUser = { name: string; email: string; status?: UserStatus };
+
+export type AuthUserLike = { email?: string | null; user_metadata?: Record<string, unknown> | null };
 
 const MAX_FIELD_LENGTH = 200;
 
 const isShortText = (value: unknown): value is string =>
   typeof value === "string" && value.trim() !== "" && value.length <= MAX_FIELD_LENGTH;
 
-export function parseStoredUser(raw: string | null): SessionUser | null {
-  if (!raw) return null;
-  try {
-    const data: unknown = JSON.parse(raw);
-    if (typeof data !== "object" || data === null) return null;
-    const { name, email, status } = data as Record<string, unknown>;
-    if (!isShortText(name) || !isShortText(email)) return null;
-    return isUserStatus(status) ? { name, email, status } : { name, email };
-  } catch {
-    return null;
-  }
+export function userFromAuth(user: AuthUserLike | null | undefined): SessionUser | null {
+  const email = user?.email?.trim();
+  if (!isShortText(email)) return null;
+  const metadata = user?.user_metadata ?? {};
+  const name = isShortText(metadata.name) ? metadata.name.trim() : email.split("@")[0];
+  return isUserStatus(metadata.status) ? { name, email, status: metadata.status } : { name, email };
 }
 
-export function userFromInput(mode: AuthMode, input: AuthInput): SessionUser {
-  const email = input.email.trim();
-  if (mode === "login") return { name: email.split("@")[0], email };
-  const name = input.name.trim();
-  return isUserStatus(input.status) ? { name, email, status: input.status } : { name, email };
+export type AuthServerError =
+  | "invalidCredentials"
+  | "emailTaken"
+  | "weakPassword"
+  | "rateLimited"
+  | "emailNotConfirmed"
+  | "notConfigured"
+  | "unknown";
+
+export function authServerError(error: { code?: string; status?: number } | null | undefined): AuthServerError {
+  switch (error?.code) {
+    case "invalid_credentials":
+      return "invalidCredentials";
+    case "user_already_exists":
+    case "email_exists":
+      return "emailTaken";
+    case "weak_password":
+      return "weakPassword";
+    case "over_request_rate_limit":
+    case "over_email_send_rate_limit":
+      return "rateLimited";
+    case "email_not_confirmed":
+      return "emailNotConfirmed";
+  }
+  return error?.status === 429 ? "rateLimited" : "unknown";
 }
