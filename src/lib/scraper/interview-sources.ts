@@ -2,18 +2,15 @@ import { load } from "cheerio";
 import { z } from "zod";
 import { generateJson } from "../ai/gemini.ts";
 import { extractQuestions } from "./extract.ts";
-import { fetchPage, type FetchedPage } from "./fetch-page.ts";
+import { type FetchedPage } from "./fetch-page.ts";
+import { readPage } from "./scrapling.ts";
+import { isBlockedSite, isLinkedInHost, isLinkedInJobUrl } from "./site-rules.ts";
 
 export const MAX_JOB_CHARS = 20_000;
 export const MAX_COMPANY_CHARS = 8_000;
 export const MAX_COMPANY_LINKS = 3;
 export const MAX_PUBLIC_PAGES = 5;
 export const MAX_QUESTIONS_PER_PAGE = 15;
-
-const FORBIDDEN_SITES = new Set([
-  "glassdoor", "linkedin", "indeed", "facebook", "fb", "instagram", "twitter", "x", "tiktok",
-  "youtube", "youtu", "reddit", "quora", "threads", "pinterest",
-]);
 
 const COMPANY_PAGE = /about|tentang|career|karir|karier|culture|budaya|values|nilai|interview|faq|rekrutmen|recruit|join/i;
 
@@ -33,10 +30,11 @@ type Deps = {
   suggest?: (role: string, company: string) => Promise<string[]>;
 };
 
-export function isForbiddenSite(url: string): boolean {
+export function isForbiddenSite(url: string, allowLinkedInJob = false): boolean {
   try {
-    const labels = new URL(url).hostname.toLowerCase().split(".");
-    return labels.slice(0, -1).some((label) => FORBIDDEN_SITES.has(label));
+    const parsed = new URL(url);
+    if (isBlockedSite(parsed)) return true;
+    return isLinkedInHost(parsed) && !(allowLinkedInJob && isLinkedInJobUrl(parsed));
   } catch {
     return true;
   }
@@ -78,14 +76,14 @@ export async function suggestQuestionPages(role: string, company: string): Promi
 const reasonOf = (e: unknown) => (e instanceof Error ? e.message : "Could not read the page");
 
 export async function collectInterviewSources(input: SourcesInput, deps: Deps = {}): Promise<InterviewSources> {
-  const fetch = deps.fetch ?? fetchPage;
+  const fetch = deps.fetch ?? readPage;
   const suggest = deps.suggest ?? suggestQuestionPages;
   const failed: FailedSource[] = [];
   const questions: SourcedQuestion[] = [];
   const seen = new Set<string>();
 
-  const read = async (url: string): Promise<FetchedPage | null> => {
-    if (isForbiddenSite(url)) {
+  const read = async (url: string, allowLinkedInJob = false): Promise<FetchedPage | null> => {
+    if (isForbiddenSite(url, allowLinkedInJob)) {
       failed.push({ url, reason: "This site does not allow automated reading" });
       return null;
     }
@@ -109,12 +107,12 @@ export async function collectInterviewSources(input: SourcesInput, deps: Deps = 
     return [] as string[];
   });
 
-  const [job, home] = await Promise.all([input.jobUrl ? read(input.jobUrl) : null, input.companyUrl ? read(input.companyUrl) : null]);
-  const companyPages = home ? await Promise.all(companyLinks(home).map(read)) : [];
+  const [job, home] = await Promise.all([input.jobUrl ? read(input.jobUrl, true) : null, input.companyUrl ? read(input.companyUrl) : null]);
+  const companyPages = home ? await Promise.all(companyLinks(home).map((url) => read(url))) : [];
 
   const known = new Set([input.jobUrl, input.companyUrl, job?.url, home?.url, ...companyPages.map((p) => p?.url)]);
   const publicUrls = [...new Set(await suggested)].filter((url) => !known.has(url)).slice(0, MAX_PUBLIC_PAGES);
-  await Promise.all(publicUrls.map(read));
+  await Promise.all(publicUrls.map((url) => read(url)));
 
   return {
     jobText: (job?.text ?? "").slice(0, MAX_JOB_CHARS),

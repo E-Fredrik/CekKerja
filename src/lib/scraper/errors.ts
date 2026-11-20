@@ -7,7 +7,8 @@ export type ScrapeErrorCode =
   | "not_html"
   | "http_error"
   | "too_many_redirects"
-  | "network";
+  | "network"
+  | "site_not_allowed";
 
 export class ScrapeError extends Error {
   readonly code: ScrapeErrorCode;

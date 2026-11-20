@@ -5,7 +5,7 @@ import { CvProfile, trimCv } from "../../../lib/cv/profile.ts";
 import { BadRequest, checkFile, langOf, type Lang } from "../../../lib/http.ts";
 import { strings } from "../../../lib/i18n.ts";
 import { issueMessage } from "../check-ad/analyze-ad.ts";
-import { fetchPage } from "../../../lib/scraper/fetch-page.ts";
+import { readPage } from "../../../lib/scraper/scrapling.ts";
 import { collectInterviewSources, isForbiddenSite, MAX_JOB_CHARS, type FailedSource, type InterviewSources, type SourcesInput } from "../../../lib/scraper/interview-sources.ts";
 
 export const MAX_QUESTIONS = 15;
@@ -118,7 +118,7 @@ export async function prepareInterview(req: InterviewInput, deps: Deps = {}): Pr
   const portfolioFailed: FailedSource[] = [];
   const [sources, portfolioText, portfolioPart] = await Promise.all([
     collect({ role: req.role, company: req.company, jobUrl: req.jobUrl, companyUrl: req.companyUrl }),
-    req.portfolioUrl ? readPortfolio(req.portfolioUrl, deps.fetch ?? fetchPage, portfolioFailed) : "",
+    req.portfolioUrl ? readPortfolio(req.portfolioUrl, deps.fetch ?? readPage, portfolioFailed) : "",
     req.portfolioFile ? fileToPart(req.portfolioFile) : null,
   ]);
   const parts = [{ text: interviewParts(req, sources, portfolioText) }, ...(portfolioPart ? [portfolioPart] : [])];
