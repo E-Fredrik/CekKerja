@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/Button.tsx";
 import { Field } from "@/components/ui/Field.tsx";
 import { useLang } from "@/components/ui/lang.tsx";
 import { userFromInput } from "@/lib/auth/session-user.ts";
-import { validateAuth, type AuthErrors, type AuthInput, type AuthMode } from "@/lib/auth/validate.ts";
+import { AUTH_STEPS, validateStep, type AuthErrors, type AuthInput, type AuthMode } from "@/lib/auth/validate.ts";
 
 const SURFACE = "bg-surface rounded-lg shadow-(--shadow-surface) p-6 sm:p-8";
 
@@ -24,19 +24,37 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
   const formRef = useRef<HTMLFormElement>(null);
   const [input, setInput] = useState<AuthInput>(EMPTY);
   const [tried, setTried] = useState(false);
+  const [step, setStep] = useState(0);
+  const steps = AUTH_STEPS[mode];
+  const last = step === steps.length - 1;
+  const shows = (key: keyof AuthInput) => steps[step].fields.includes(key);
 
-  const errors: AuthErrors = tried ? validateAuth(mode, input) : {};
+  const errors: AuthErrors = tried ? validateStep(mode, step, input) : {};
   const message = (key: keyof AuthInput) => (errors[key] ? a.errors[errors[key]] : undefined);
 
   function update<K extends keyof AuthInput>(key: K, value: AuthInput[K]) {
     setInput((current) => ({ ...current, [key]: value }));
   }
 
+  function focusFirst(selector: string) {
+    requestAnimationFrame(() => formRef.current?.querySelector<HTMLElement>(selector)?.focus());
+  }
+
+  function goTo(next: number) {
+    setTried(false);
+    setStep(next);
+    focusFirst("input:not([hidden])");
+  }
+
   function submit(e: FormEvent) {
     e.preventDefault();
     setTried(true);
-    if (Object.keys(validateAuth(mode, input)).length > 0) {
-      requestAnimationFrame(() => formRef.current?.querySelector<HTMLElement>("[aria-invalid='true']")?.focus());
+    if (Object.keys(validateStep(mode, step, input)).length > 0) {
+      focusFirst("[aria-invalid='true']");
+      return;
+    }
+    if (!last) {
+      goTo(step + 1);
       return;
     }
     signIn(userFromInput(mode, input));
@@ -50,7 +68,30 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
         <p className="text-callout text-ink-soft">{signup ? a.signupLead : a.loginLead}</p>
       </header>
 
-      {signup && (
+      <div className="flex flex-col gap-2">
+        <p className="text-footnote font-[650] text-ink-soft" aria-live="polite">
+          {a.stepOf.replace("{step}", String(step + 1)).replace("{total}", String(steps.length))}
+          {": "}
+          <span className="text-ink">{a.steps[steps[step].name]}</span>
+        </p>
+        <ol className="flex gap-1.5" aria-hidden="true">
+          {steps.map((s, i) => (
+            <li
+              key={s.name}
+              className={`h-1.5 flex-1 rounded-full transition-colors ${i <= step ? "bg-sign-blue" : "bg-line"}`}
+            />
+          ))}
+        </ol>
+      </div>
+
+      {!shows("email") && (
+        <p className="text-callout text-ink-soft">
+          {a.accountFor} <span className="font-[650] text-ink break-all">{input.email.trim()}</span>
+          <input type="email" name="username" autoComplete="username" value={input.email.trim()} readOnly hidden />
+        </p>
+      )}
+
+      {shows("name") && (
         <Field
           label={a.name}
           name="name"
@@ -60,6 +101,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
           error={message("name")}
         />
       )}
+      {shows("email") && (
       <Field
         label={a.email}
         name="email"
@@ -70,6 +112,8 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
         onChange={(e) => update("email", e.target.value)}
         error={message("email")}
       />
+      )}
+      {shows("password") && (
       <Field
         label={a.password}
         name="password"
@@ -80,7 +124,8 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
         onChange={(e) => update("password", e.target.value)}
         error={message("password")}
       />
-      {signup && (
+      )}
+      {shows("confirmPassword") && (
         <Field
           label={a.confirmPassword}
           name="confirmPassword"
@@ -92,7 +137,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
         />
       )}
 
-      {signup && (
+      {shows("consent") && (
         <div className="flex flex-col gap-1.5">
           <label htmlFor={consentId} className="flex items-start gap-3 text-callout text-ink cursor-pointer">
             <input
@@ -119,9 +164,16 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
         </div>
       )}
 
-      <Button type="submit" className="w-full mt-2">
-        {signup ? a.signup : a.login}
-      </Button>
+      <div className="flex gap-3 mt-2">
+        {step > 0 && (
+          <Button type="button" variant="secondary" onClick={() => goTo(step - 1)}>
+            {a.back}
+          </Button>
+        )}
+        <Button type="submit" className="flex-1">
+          {!last ? a.next : signup ? a.signup : a.login}
+        </Button>
+      </div>
 
       <p className="text-callout text-ink-soft text-center">
         {signup ? a.haveAccount : a.noAccount}{" "}

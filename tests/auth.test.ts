@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { MIN_PASSWORD_LENGTH, validateAuth, type AuthInput } from "../src/lib/auth/validate.ts";
+import { AUTH_STEPS, MIN_PASSWORD_LENGTH, validateAuth, validateStep, type AuthInput } from "../src/lib/auth/validate.ts";
 import { parseStoredUser, userFromInput } from "../src/lib/auth/session-user.ts";
 
 const validSignup: AuthInput = {
@@ -83,4 +83,28 @@ test("parseStoredUser accepts a valid user and rejects anything else", () => {
 
 test("parseStoredUser drops extra fields such as a password", () => {
   assert.deepEqual(parseStoredUser('{"name":"K","email":"k@example.com","password":"secret"}'), { name: "K", email: "k@example.com" });
+});
+
+test("signup has three steps and login two, covering every field the full check uses", () => {
+  assert.deepEqual(AUTH_STEPS.signup.map((s) => s.name), ["about", "password", "consent"]);
+  assert.deepEqual(AUTH_STEPS.login.map((s) => s.name), ["email", "password"]);
+  const empty: AuthInput = { name: "", email: "", password: "", confirmPassword: "", consent: false };
+  for (const mode of ["signup", "login"] as const) {
+    const fromSteps = Object.assign({}, ...AUTH_STEPS[mode].map((_, i) => validateStep(mode, i, empty)));
+    assert.deepEqual(fromSteps, validateAuth(mode, empty), mode);
+  }
+});
+
+test("a step only reports errors for its own fields", () => {
+  const onlyAbout: AuthInput = { name: "Kenneth", email: "kenneth@example.com", password: "", confirmPassword: "", consent: false };
+  assert.deepEqual(validateStep("signup", 0, onlyAbout), {});
+  assert.deepEqual(validateStep("signup", 1, onlyAbout), { password: "passwordRequired" });
+  assert.deepEqual(validateStep("signup", 2, onlyAbout), { consent: "consentRequired" });
+  assert.deepEqual(validateStep("signup", 1, { ...validSignup, confirmPassword: "lain12345" }), { confirmPassword: "passwordMismatch" });
+  assert.deepEqual(validateStep("login", 0, { ...onlyAbout, email: "abc" }), { email: "emailInvalid" });
+  assert.deepEqual(validateStep("login", 1, onlyAbout), { password: "passwordRequired" });
+});
+
+test("a step number out of range has no errors instead of crashing", () => {
+  assert.deepEqual(validateStep("login", 5, validSignup), {});
 });

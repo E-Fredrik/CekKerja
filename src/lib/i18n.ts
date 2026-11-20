@@ -67,6 +67,16 @@ const id = {
     signup: "Daftar",
     noAccount: "Belum punya akun?",
     haveAccount: "Sudah punya akun?",
+    next: "Lanjut",
+    back: "Kembali",
+    stepOf: "Langkah {step} dari {total}",
+    accountFor: "Akun untuk",
+    steps: {
+      about: "Tentang kamu",
+      email: "Email",
+      password: "Kata sandi",
+      consent: "Persetujuan",
+    },
     errors: {
       nameRequired: "Tulis nama kamu.",
       emailInvalid: "Tulis alamat email yang benar, misalnya nama@email.com.",
@@ -380,6 +390,16 @@ const en: Dict = {
     signup: "Sign up",
     noAccount: "No account yet?",
     haveAccount: "Already have an account?",
+    next: "Next",
+    back: "Back",
+    stepOf: "Step {step} of {total}",
+    accountFor: "Account for",
+    steps: {
+      about: "About you",
+      email: "Email",
+      password: "Password",
+      consent: "Consent",
+    },
     errors: {
       nameRequired: "Enter your name.",
       emailInvalid: "Enter a valid email address, for example name@email.com.",
