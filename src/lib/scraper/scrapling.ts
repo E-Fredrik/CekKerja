@@ -33,7 +33,7 @@ export type ScraplingOutput = z.infer<typeof ScraplingOutput>;
 
 export const runPython: Runner = (python, args, options) =>
   new Promise((resolve, reject) => {
-    execFile(python, args, { ...options, windowsHide: true, encoding: "utf8" }, (error, stdout) => {
+    execFile(python, args, { ...options, env: { NODE_ENV: process.env.NODE_ENV, PATH: process.env.PATH, HOME: process.env.HOME }, windowsHide: true, encoding: "utf8" }, (error, stdout) => {
       if (!error) resolve(stdout);
       else if (error.code === "ERR_CHILD_PROCESS_STDIO_MAXBUFFER") reject(new ScrapeError("too_large", "The page is too large to read"));
       else if (error.killed) reject(new ScrapeError("timeout", "The page took too long to answer"));
