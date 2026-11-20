@@ -1,6 +1,7 @@
 import { ScrapeError } from "./errors.ts";
 import { cleanLines, htmlToText } from "./extract.ts";
 import { DISALLOW_ALL, isAllowedByRobots } from "./robots.ts";
+import { guardSite, isLinkedInJobUrl } from "./site-rules.ts";
 import { assertPublicHost, checkUrl, systemLookup, type Lookup } from "./url-guard.ts";
 
 export const BOT_NAME = "CekKerjaBot";
@@ -9,7 +10,7 @@ export const TIMEOUT_MS = 8_000;
 export const MAX_PAGE_BYTES = 2 * 1024 * 1024;
 const MAX_ROBOTS_BYTES = 512 * 1024;
 const MAX_REDIRECTS = 5;
-const PAGE_TYPES = new Set(["", "text/html", "application/xhtml+xml", "text/plain"]);
+export const PAGE_TYPES = new Set(["", "text/html", "application/xhtml+xml", "text/plain"]);
 const PAGE_ACCEPT = "text/html,application/xhtml+xml,text/plain;q=0.9,*/*;q=0.1";
 
 export type Fetcher = (url: URL, init: RequestInit) => Promise<Response>;
@@ -85,8 +86,9 @@ function decode(bytes: Buffer, contentType: string): string {
 async function follow(start: URL, session: Session, accept: string, checkRobots: boolean) {
   let url = start;
   for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+    url = guardSite(url);
     await untilAborted(assertPublicHost(url, session.lookup), session.signal);
-    if (checkRobots) await assertRobotsAllow(url, session);
+    if (checkRobots && !isLinkedInJobUrl(url)) await assertRobotsAllow(url, session);
     const response = await session.fetch(url, {
       redirect: "manual",
       signal: session.signal,
@@ -121,14 +123,38 @@ async function assertRobotsAllow(url: URL, session: Session): Promise<void> {
   }
 }
 
-export async function fetchPage(input: string, options: FetchOptions = {}): Promise<FetchedPage> {
-  const signal = AbortSignal.timeout(options.timeoutMs ?? TIMEOUT_MS);
-  const session: Session = {
+function newSession(options: FetchOptions, signal: AbortSignal): Session {
+  return {
     fetch: options.fetch ?? ((url, init) => fetch(url, init)),
     lookup: options.lookup ?? systemLookup,
     signal,
     robots: new Map(),
   };
+}
+
+const asScrapeError = (error: unknown, signal: AbortSignal) =>
+  error instanceof ScrapeError
+    ? error
+    : signal.aborted
+      ? new ScrapeError("timeout", "The page took too long to answer")
+      : new ScrapeError("network", "Could not reach the page");
+
+export async function assertReadable(input: URL, options: FetchOptions = {}): Promise<URL> {
+  const signal = AbortSignal.timeout(options.timeoutMs ?? TIMEOUT_MS);
+  const session = newSession(options, signal);
+  try {
+    const url = guardSite(input);
+    await untilAborted(assertPublicHost(url, session.lookup), signal);
+    if (!isLinkedInJobUrl(url)) await assertRobotsAllow(url, session);
+    return url;
+  } catch (error) {
+    throw asScrapeError(error, signal);
+  }
+}
+
+export async function fetchPage(input: string, options: FetchOptions = {}): Promise<FetchedPage> {
+  const signal = AbortSignal.timeout(options.timeoutMs ?? TIMEOUT_MS);
+  const session = newSession(options, signal);
   try {
     const { response, url } = await follow(checkUrl(input), session, PAGE_ACCEPT, true);
     if (!response.ok) {
@@ -150,8 +176,6 @@ export async function fetchPage(input: string, options: FetchOptions = {}): Prom
       text: plain ? cleanLines(body).join("\n") : htmlToText(body),
     };
   } catch (error) {
-    if (error instanceof ScrapeError) throw error;
-    if (signal.aborted) throw new ScrapeError("timeout", "The page took too long to answer");
-    throw new ScrapeError("network", "Could not reach the page");
+    throw asScrapeError(error, signal);
   }
 }
