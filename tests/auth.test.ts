@@ -1,8 +1,17 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { AUTH_STEPS, MIN_PASSWORD_LENGTH, validateAuth, validateStep, type AuthInput } from "../src/lib/auth/validate.ts";
+import { AUTH_STEPS, MIN_PASSWORD_LENGTH, normalizeCode, validateAuth, validateStep, type AuthInput } from "../src/lib/auth/validate.ts";
 import { authServerError, userFromAuth } from "../src/lib/auth/session-user.ts";
-import { isGuestOnlyPath, isProtectedPath, safeNextPath } from "../src/lib/auth/routes.ts";
+import { hasSecondFactor, isGuestOnlyPath, isProtectedPath, safeNextPath } from "../src/lib/auth/routes.ts";
+import {
+  CODE_TTL_MS,
+  MAX_ATTEMPTS,
+  canSendCode,
+  challengeState,
+  codesMatch,
+  generateCode,
+  hashCode,
+} from "../src/lib/auth/sign-in-code.ts";
 import { supabaseConfig } from "../src/lib/db/config.ts";
 import { MIN_SIGNUP_STRENGTH, isCommonPassword, passwordStrength } from "../src/lib/auth/password-strength.ts";
 
@@ -172,10 +181,13 @@ test("supabaseConfig needs both a https URL and a key", () => {
   }
 });
 
-test("signup has four steps and login two, covering every field the full check uses", () => {
-  assert.deepEqual(AUTH_STEPS.signup.map((s) => s.name), ["email", "password", "profile", "review"]);
-  assert.deepEqual(AUTH_STEPS.login.map((s) => s.name), ["email", "password"]);
+test("signup has four steps then the code, login two then the code, covering every field the full check uses", () => {
+  assert.deepEqual(AUTH_STEPS.signup.map((s) => s.name), ["email", "password", "profile", "review", "code"]);
+  assert.deepEqual(AUTH_STEPS.login.map((s) => s.name), ["email", "password", "code"]);
   for (const mode of ["signup", "login"] as const) {
+    const withCode = { ...empty, code: "" };
+    const fromCodeSteps = Object.assign({}, ...AUTH_STEPS[mode].map((_, i) => validateStep(mode, i, withCode)));
+    assert.deepEqual(fromCodeSteps, validateAuth(mode, withCode), `${mode} with code`);
     const fromSteps = Object.assign({}, ...AUTH_STEPS[mode].map((_, i) => validateStep(mode, i, empty)));
     assert.deepEqual(fromSteps, validateAuth(mode, empty), mode);
   }
@@ -194,4 +206,103 @@ test("a step only reports errors for its own fields", () => {
 
 test("a step number out of range has no errors instead of crashing", () => {
   assert.deepEqual(validateStep("login", 5, validSignup), {});
+});
+
+test("the code step needs exactly six digits, spaces and dashes allowed", () => {
+  assert.equal(normalizeCode("123456"), "123456");
+  assert.equal(normalizeCode(" 123 456 "), "123456");
+  assert.equal(normalizeCode("123-456"), "123456");
+  for (const code of ["", "12345", "1234567", "12a456", "１２３４５６", "123 45"]) assert.equal(normalizeCode(code), null, code);
+  const login = { ...empty, email: "k@example.com", password: "x" };
+  assert.deepEqual(validateStep("login", 2, { ...login, code: "12" }), { code: "codeInvalid" });
+  assert.deepEqual(validateStep("login", 2, { ...login, code: "654321" }), {});
+  assert.equal(validateAuth("login", login).code, undefined);
+});
+
+test("generateCode always gives six digits, padded with zeros", () => {
+  assert.equal(generateCode(() => 0), "000000");
+  assert.equal(generateCode(() => 42), "000042");
+  assert.equal(generateCode(() => 999999), "999999");
+  for (let i = 0; i < 200; i++) assert.match(generateCode(), /^\d{6}$/);
+  let max = 0;
+  generateCode((n) => ((max = n), 0));
+  assert.equal(max, 1_000_000);
+});
+
+test("the stored hash depends on the secret and the challenge, and matching is exact", () => {
+  const hash = hashCode("secret", "challenge-1", "123456");
+  assert.match(hash, /^[0-9a-f]{64}$/);
+  assert.doesNotMatch(hash, /123456/);
+  assert.notEqual(hash, hashCode("other", "challenge-1", "123456"));
+  assert.notEqual(hash, hashCode("secret", "challenge-2", "123456"));
+  assert.equal(codesMatch(hash, hashCode("secret", "challenge-1", "123456")), true);
+  assert.equal(codesMatch(hash, hashCode("secret", "challenge-1", "123457")), false);
+  assert.equal(codesMatch(hash, "abcd"), false);
+  assert.equal(codesMatch("", ""), false);
+});
+
+test("a code expires after 10 minutes, locks after 5 wrong tries and works only once", () => {
+  const sent = new Date("2026-11-21T10:00:00Z");
+  const open = { expiresAt: new Date(sent.getTime() + CODE_TTL_MS), attempts: 0, usedAt: null };
+  assert.equal(challengeState(open, sent), "open");
+  assert.equal(challengeState(open, new Date(sent.getTime() + CODE_TTL_MS - 1)), "open");
+  assert.equal(challengeState(open, new Date(sent.getTime() + CODE_TTL_MS)), "expired");
+  assert.equal(challengeState({ ...open, attempts: MAX_ATTEMPTS - 1 }, sent), "open");
+  assert.equal(challengeState({ ...open, attempts: MAX_ATTEMPTS }, sent), "locked");
+  assert.equal(challengeState({ ...open, usedAt: sent }, sent), "used");
+  assert.equal(MAX_ATTEMPTS, 5);
+  assert.equal(CODE_TTL_MS, 10 * 60 * 1000);
+});
+
+test("a new code can be sent at most once a minute and 5 times an hour", () => {
+  const now = new Date("2026-11-21T10:00:00Z");
+  const ago = (seconds: number) => new Date(now.getTime() - seconds * 1000);
+  assert.deepEqual(canSendCode([], now), { allowed: true });
+  assert.deepEqual(canSendCode([ago(30)], now), { allowed: false, retryAfterSeconds: 30 });
+  assert.deepEqual(canSendCode([ago(60)], now), { allowed: true });
+  assert.deepEqual(canSendCode([ago(100), ago(200), ago(300), ago(400)], now), { allowed: true });
+  assert.deepEqual(canSendCode([ago(100), ago(200), ago(300), ago(400), ago(500)], now), { allowed: false, retryAfterSeconds: 3100 });
+  assert.deepEqual(canSendCode([ago(100), ago(200), ago(300), ago(400), ago(3600)], now), { allowed: true });
+  assert.deepEqual(canSendCode([new Date(now.getTime() + 5000)], now), { allowed: true });
+});
+
+test("only sessions that passed the emailed code count as signed in", () => {
+  assert.equal(hasSecondFactor([{ method: "otp", timestamp: 1 }]), true);
+  assert.equal(hasSecondFactor([{ method: "password", timestamp: 1 }, { method: "magiclink", timestamp: 2 }]), true);
+  assert.equal(hasSecondFactor(["otp"]), true);
+  for (const amr of [undefined, null, [], [{ method: "password", timestamp: 1 }], ["password"], "otp", [null], [{}]]) {
+    assert.equal(hasSecondFactor(amr), false, JSON.stringify(amr));
+  }
+});
+
+test("the sign in API rejects bad input and says when accounts are not set up", async () => {
+  const { POST } = await import("../src/app/api/account/sign-in/route.ts");
+  const call = (body: unknown, ip: string) =>
+    POST(new Request("http://x/api/account/sign-in", { method: "POST", headers: { "x-real-ip": ip }, body: JSON.stringify(body) }));
+  assert.equal((await call({ mode: "login", email: "k@example.com" }, "1.1.1.1")).status, 400);
+  assert.equal((await call({ mode: "signup", email: "k@example.com", password: "password123", name: "K", status: "student", lang: "id" }, "1.1.1.2")).status, 400);
+  assert.equal((await call({ mode: "login", email: "nope", password: "x", lang: "id" }, "1.1.1.3")).status, 400);
+  const res = await call({ mode: "login", email: "k@example.com", password: "x", lang: "id" }, "1.1.1.4");
+  assert.equal(res.status, 503);
+  assert.deepEqual(await res.json(), { error: "notConfigured" });
+  assert.match(res.headers.get("cache-control") ?? "", /no-store/);
+  const huge = await POST(new Request("http://x", { method: "POST", headers: { "x-real-ip": "1.1.1.5" }, body: "x".repeat(9000) }));
+  assert.equal(huge.status, 400);
+});
+
+test("the sign in API limits attempts per address", async () => {
+  const { POST } = await import("../src/app/api/account/sign-in/route.ts");
+  const statuses = [];
+  for (let i = 0; i < 11; i++) {
+    const res = await POST(new Request("http://x", { method: "POST", headers: { "x-real-ip": "9.9.9.9" }, body: "{}" }));
+    statuses.push(res.status);
+  }
+  assert.equal(statuses.at(-1), 429);
+  assert.equal(statuses.filter((s) => s === 429).length, 1);
+});
+
+test("the resend API needs a real challenge id", async () => {
+  const { POST } = await import("../src/app/api/account/resend/route.ts");
+  const res = await POST(new Request("http://x", { method: "POST", body: JSON.stringify({ challengeId: "not-a-uuid", lang: "id" }) }));
+  assert.equal(res.status, 400);
 });

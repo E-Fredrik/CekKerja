@@ -3,15 +3,14 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion, useReducedMotion } from "motion/react";
-import { useId, useRef, useState, type FormEvent } from "react";
+import { useEffect, useId, useRef, useState, type FormEvent } from "react";
 import { PasswordStrength } from "@/components/auth/PasswordStrength.tsx";
 import { Button } from "@/components/ui/Button.tsx";
 import { Field } from "@/components/ui/Field.tsx";
 import { Notice } from "@/components/ui/Notice.tsx";
 import { useLang } from "@/components/ui/lang.tsx";
 import { safeNextPath } from "@/lib/auth/routes.ts";
-import { authServerError, type AuthServerError } from "@/lib/auth/session-user.ts";
-import { browserSupabase } from "@/lib/db/browser.ts";
+import { apiAuthError, type AuthServerError } from "@/lib/auth/session-user.ts";
 import {
   AUTH_STEPS,
   USER_STATUSES,
@@ -23,7 +22,27 @@ import {
 
 const SURFACE = "bg-surface rounded-lg shadow-(--shadow-surface) p-6 sm:p-8";
 
-const EMPTY: AuthInput = { email: "", password: "", confirmPassword: "", name: "", status: "", consent: false };
+const EMPTY: AuthInput = { email: "", password: "", confirmPassword: "", name: "", status: "", consent: false, code: "" };
+
+const RESEND_SECONDS = 60;
+
+type ServerError = { code: AuthServerError; attemptsLeft?: number; retryAfterSeconds?: number };
+
+async function postJson(url: string, body: unknown): Promise<{ ok: boolean; data: Record<string, unknown> }> {
+  try {
+    const res = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+    const data = (await res.json().catch(() => ({}))) as Record<string, unknown>;
+    return { ok: res.ok, data };
+  } catch {
+    return { ok: false, data: {} };
+  }
+}
+
+const toServerError = (data: Record<string, unknown>): ServerError => ({
+  code: apiAuthError(data.error),
+  attemptsLeft: typeof data.attemptsLeft === "number" ? data.attemptsLeft : undefined,
+  retryAfterSeconds: typeof data.retryAfterSeconds === "number" ? data.retryAfterSeconds : undefined,
+});
 
 function FieldError({ id, message }: { id: string; message: string }) {
   return (
@@ -39,7 +58,7 @@ function FieldError({ id, message }: { id: string; message: string }) {
 }
 
 export function AuthForm({ mode }: { mode: AuthMode }) {
-  const { t } = useLang();
+  const { t, lang } = useLang();
   const router = useRouter();
   const reduceMotion = useReducedMotion();
   const a = t.auth;
@@ -51,7 +70,10 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
   const [tried, setTried] = useState(false);
   const [step, setStep] = useState(0);
   const [pending, setPending] = useState(false);
-  const [serverError, setServerError] = useState<AuthServerError | null>(null);
+  const [serverError, setServerError] = useState<ServerError | null>(null);
+  const [challengeId, setChallengeId] = useState<string | null>(null);
+  const [resendLeft, setResendLeft] = useState(0);
+  const [resent, setResent] = useState(false);
   const steps = AUTH_STEPS[mode];
   const current = steps[step];
   const last = step === steps.length - 1;
@@ -68,6 +90,12 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
     requestAnimationFrame(() => formRef.current?.querySelector<HTMLElement>(selector)?.focus());
   }
 
+  useEffect(() => {
+    if (resendLeft <= 0) return;
+    const timer = setTimeout(() => setResendLeft((left) => left - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [resendLeft]);
+
   function goTo(next: number) {
     setTried(false);
     setServerError(null);
@@ -75,29 +103,58 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
     focusFirst("[data-step] input:not([hidden])");
   }
 
-  async function finish() {
-    const supabase = browserSupabase();
-    if (!supabase) {
-      setServerError("notConfigured");
-      return;
-    }
+  const codeStep = steps.findIndex((s) => s.name === "code");
+
+  async function requestCode() {
     setPending(true);
     setServerError(null);
-    const email = input.email.trim();
-    const { data, error } = signup
-      ? await supabase.auth.signUp({
-          email,
-          password: input.password,
-          options: { data: { name: input.name.trim(), status: input.status } },
-        })
-      : await supabase.auth.signInWithPassword({ email, password: input.password });
-    if (error || !data.session) {
+    const body = signup
+      ? { mode, email: input.email.trim(), password: input.password, name: input.name.trim(), status: input.status, lang }
+      : { mode, email: input.email.trim(), password: input.password, lang };
+    const { ok, data } = await postJson("/api/account/sign-in", body);
+    setPending(false);
+    if (!ok || typeof data.challengeId !== "string") {
+      setServerError(toServerError(data));
+      return;
+    }
+    setChallengeId(data.challengeId);
+    setResendLeft(RESEND_SECONDS);
+    setResent(false);
+    update("code", "");
+    goTo(codeStep);
+  }
+
+  async function verifyCode() {
+    setPending(true);
+    setServerError(null);
+    const { ok, data } = await postJson("/api/account/verify", { challengeId, code: input.code ?? "" });
+    if (!ok) {
       setPending(false);
-      setServerError(error ? authServerError(error) : "emailNotConfirmed");
+      setServerError(toServerError(data));
+      focusFirst("[data-step] input:not([hidden])");
       return;
     }
     router.replace(safeNextPath(new URLSearchParams(window.location.search).get("next")));
     router.refresh();
+  }
+
+  async function resendCode() {
+    if (!challengeId || resendLeft > 0 || pending) return;
+    setPending(true);
+    setServerError(null);
+    const { ok, data } = await postJson("/api/account/resend", { challengeId, lang });
+    setPending(false);
+    if (!ok || typeof data.challengeId !== "string") {
+      const error = toServerError(data);
+      setServerError(error);
+      if (error.retryAfterSeconds) setResendLeft(error.retryAfterSeconds);
+      return;
+    }
+    setChallengeId(data.challengeId);
+    setResendLeft(RESEND_SECONDS);
+    setResent(true);
+    update("code", "");
+    focusFirst("[data-step] input:not([hidden])");
   }
 
   function submit(e: FormEvent) {
@@ -108,11 +165,9 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
       focusFirst("input[aria-invalid='true'], [aria-invalid='true'] input");
       return;
     }
-    if (!last) {
-      goTo(step + 1);
-      return;
-    }
-    void finish();
+    if (last) void verifyCode();
+    else if (step === codeStep - 1) void requestCode();
+    else goTo(step + 1);
   }
 
   const stepOf = (name: (typeof steps)[number]["name"]) => steps.findIndex((s) => s.name === name);
@@ -155,7 +210,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
           {!signup && current.name === "password" ? a.password : a.steps[current.name]}
         </h2>
 
-        {!shows("email") && current.name !== "review" && (
+        {!shows("email") && current.name !== "review" && current.name !== "code" && (
           <p className="text-callout text-ink-soft">
             {a.accountFor} <span className="font-[650] text-ink break-all">{input.email.trim()}</span>
           </p>
@@ -288,10 +343,44 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
             )}
           </div>
         )}
+        {shows("code") && (
+          <>
+            <p className="text-callout text-ink-soft">
+              {a.codeSentTo} <span className="font-[650] text-ink break-all">{input.email.trim()}</span>
+            </p>
+            <Field
+              label={a.code}
+              name="code"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              maxLength={7}
+              hint={a.codeHint}
+              value={input.code ?? ""}
+              onChange={(e) => update("code", e.target.value.replace(/[^\d\s-]/g, ""))}
+              error={message("code")}
+              inputClassName="text-title-2 tracking-[0.4em] tabular-nums"
+            />
+            {resent && <p className="text-footnote text-ink-soft" aria-live="polite">{a.codeResent}</p>}
+            <Button
+              type="button"
+              variant="quiet"
+              size="small"
+              className="self-start -ml-3"
+              disabled={resendLeft > 0 || pending}
+              onClick={() => void resendCode()}
+            >
+              {resendLeft > 0 ? a.resendIn.replace("{s}", String(resendLeft)) : a.resend}
+            </Button>
+          </>
+        )}
       </motion.div>
 
       {serverError && (
-        <Notice variant={serverError === "rateLimited" ? "limit" : "error"}>{a.serverErrors[serverError]}</Notice>
+        <Notice variant={serverError.code === "rateLimited" || serverError.code === "resendWait" ? "limit" : "error"}>
+          {a.serverErrors[serverError.code]
+            .replace("{n}", String(serverError.attemptsLeft ?? 0))
+            .replace("{s}", String(serverError.retryAfterSeconds ?? RESEND_SECONDS))}
+        </Notice>
       )}
 
       <div className={`flex items-center gap-3 pt-1 ${step > 0 ? "justify-between" : "justify-end"}`}>
@@ -301,7 +390,7 @@ export function AuthForm({ mode }: { mode: AuthMode }) {
           </Button>
         )}
         <Button type="submit" pending={pending}>
-          {!last ? a.next : signup ? a.createAccount : a.login}
+          {last ? a.verify : signup && step === codeStep - 1 ? a.createAccount : a.next}
         </Button>
       </div>
 

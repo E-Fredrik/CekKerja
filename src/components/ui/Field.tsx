@@ -6,6 +6,7 @@ type FieldBaseProps = {
   label: string;
   hint?: string;
   error?: string;
+  inputClassName?: string;
 };
 
 export type InputFieldProps = FieldBaseProps &
@@ -24,7 +25,7 @@ export function Field(props: FieldProps) {
   const generatedId = useId();
 
   if (props.as === "textarea") {
-    const { label, hint, error, as, id = generatedId, className = "", ...rest } = props;
+    const { label, hint, error, as, id = generatedId, className = "", inputClassName = "", ...rest } = props;
     const hintId = hint ? `${id}-hint` : undefined;
     const errorId = error ? `${id}-error` : undefined;
     const describedBy = [hintId, errorId].filter(Boolean).join(" ") || undefined;
@@ -45,6 +46,7 @@ export function Field(props: FieldProps) {
             "focus:outline-none focus:border-sign-blue focus:ring-4 focus:ring-brand-wash",
             "disabled:opacity-50 disabled:cursor-not-allowed",
             error ? "border-stop focus:border-stop focus:ring-stop-wash" : "",
+            inputClassName,
           ].join(" ")}
           {...rest}
         />
@@ -67,7 +69,7 @@ export function Field(props: FieldProps) {
     );
   }
 
-  const { label, hint, error, as, id = generatedId, className = "", type = "text", ...rest } = props;
+  const { label, hint, error, as, id = generatedId, className = "", inputClassName = "", type = "text", ...rest } = props;
   const hintId = hint ? `${id}-hint` : undefined;
   const errorId = error ? `${id}-error` : undefined;
   const describedBy = [hintId, errorId].filter(Boolean).join(" ") || undefined;
@@ -89,6 +91,7 @@ export function Field(props: FieldProps) {
           "focus:outline-none focus:border-sign-blue focus:ring-4 focus:ring-brand-wash",
           "disabled:opacity-50 disabled:cursor-not-allowed",
           error ? "border-stop focus:border-stop focus:ring-stop-wash" : "",
+          inputClassName,
         ].join(" ")}
         {...rest}
       />

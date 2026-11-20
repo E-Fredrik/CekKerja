@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { isGuestOnlyPath, isProtectedPath, SIGN_IN_PATH } from "@/lib/auth/routes.ts";
+import { hasSecondFactor, isGuestOnlyPath, isProtectedPath, SIGN_IN_PATH } from "@/lib/auth/routes.ts";
 import { supabaseConfig } from "./config.ts";
 
 function redirectKeepingSession(request: NextRequest, from: NextResponse, path: string, next?: string) {
@@ -34,7 +34,7 @@ export async function updateSession(request: NextRequest): Promise<NextResponse>
   });
 
   const { data } = await supabase.auth.getClaims();
-  const signedIn = Boolean(data?.claims?.sub);
+  const signedIn = Boolean(data?.claims?.sub) && hasSecondFactor(data?.claims?.amr);
   const { pathname, search } = request.nextUrl;
 
   if (!signedIn && isProtectedPath(pathname)) {

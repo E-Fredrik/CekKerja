@@ -6,6 +6,7 @@ import {
   contractResultTemplate,
   jobAdResultTemplate,
   interviewPrepTemplate,
+  signInCodeTemplate,
 } from "../src/lib/mail/templates.ts";
 import { createMailerTransport, sendMail } from "../src/lib/mail/send.ts";
 
@@ -385,4 +386,18 @@ test("EmailRequest rejects interview results with line breaks in the role or too
   assert.equal(EmailRequest.safeParse(tooMany).success, false);
   const noExtra = { ...interviewRequest, result: { ...interviewRequest.result, questionsToAskThem: undefined } };
   assert.equal(EmailRequest.safeParse(noExtra).success, true);
+});
+
+test("the sign in code email shows the code in both languages and never echoes markup", () => {
+  const id = signInCodeTemplate("048213", "id");
+  assert.equal(id.subject, "Kode masuk Cek Kerja: 048213");
+  assert.match(id.html, /048213/);
+  assert.match(id.text, /048213/);
+  assert.match(id.html, /lang="id"/);
+  assert.match(id.text, /10 menit/);
+  const en = signInCodeTemplate("048213", "en");
+  assert.match(en.subject, /sign in code: 048213/);
+  assert.match(en.text, /Never share this code/);
+  const odd = signInCodeTemplate("<b>1</b>", "en");
+  assert.doesNotMatch(odd.html, /<b>1<\/b>/);
 });

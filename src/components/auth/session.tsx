@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { browserSupabase } from "@/lib/db/browser.ts";
+import { hasSecondFactor } from "@/lib/auth/routes.ts";
 import { userFromAuth, type SessionUser } from "@/lib/auth/session-user.ts";
 
 const LEGACY_STORAGE_KEY = "ck-session";
@@ -30,8 +31,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       return;
     }
     const { data } = supabase.auth.onAuthStateChange((_event, session) => {
-      setUser(userFromAuth(session?.user));
-      setReady(true);
+      if (!session) {
+        setUser(null);
+        setReady(true);
+        return;
+      }
+      setTimeout(async () => {
+        const { data: verified } = await supabase.auth.getClaims();
+        setUser(hasSecondFactor(verified?.claims?.amr) ? userFromAuth(session.user) : null);
+        setReady(true);
+      }, 0);
     });
     return () => data.subscription.unsubscribe();
   }, []);

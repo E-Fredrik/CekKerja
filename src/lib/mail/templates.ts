@@ -364,3 +364,16 @@ export function interviewPrepTemplate(data: InterviewEmailData): { subject: stri
     text: textLines.join("\n"),
   };
 }
+
+export function signInCodeTemplate(code: string, lang: Lang): { subject: string; html: string; text: string } {
+  const t = strings[lang].signInEmail;
+  const safeCode = escapeHtml(code);
+  const subject = t.subject.replace("{code}", code);
+  const body = `
+        <h1 style="margin: 0 0 12px 0; font-size: 24px; font-weight: 700; color: #15171c;">${escapeHtml(t.heading)}</h1>
+        <p style="margin: 0 0 20px 0; font-size: 16px; color: #15171c;">${escapeHtml(t.lead)}</p>
+        <p style="margin: 0 0 20px 0; padding: 16px; background-color: #e4ebfb; border-radius: 12px; text-align: center; font-size: 32px; font-weight: 800; letter-spacing: 0.3em; color: #15171c;">${safeCode}</p>
+        <p style="margin: 0; font-size: 15px; color: #545b68;">${escapeHtml(t.ignore)}</p>`;
+  const text = `${t.heading}\n\n${code}\n\n${t.lead}\n\n${t.ignore}`;
+  return { subject, html: baseLayout(subject, body, lang), text };
+}
