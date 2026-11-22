@@ -134,7 +134,7 @@ function Result({ check, fileName, onAgain }: { check: ContractCheck; fileName: 
         </section>
       )}
 
-      <EmailResult kind="contract" result={check} />
+      <EmailResult kind="contract" result={{ ...check, clauses: check.clauses.map((c) => ({ ...c, citations: [], related: null })) }} />
 
       <div className="flex flex-wrap gap-3">
         {check.negotiationMessage && (
@@ -160,6 +160,8 @@ function ClauseFinding({ clause, code }: { clause: CheckedClause; code: string }
       quote={clause.text}
       reason={clause.explanation}
       legalBasis={clause.source ?? t.kontrak.noSource}
+      articles={clause.related ? [clause.related] : clause.citations}
+      related={clause.related !== null}
       question={clause.verdict === "green" ? undefined : clause.questionToAsk || undefined}
     />
   );

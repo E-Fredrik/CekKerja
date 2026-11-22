@@ -68,3 +68,21 @@ export async function fileToPart(file: File): Promise<Part> {
   const data = Buffer.from(await file.arrayBuffer()).toString("base64");
   return { inlineData: { mimeType: file.type || "application/pdf", data } };
 }
+
+export const EMBED_MODEL = "gemini-embedding-001";
+export const EMBED_DIMENSIONS = 768;
+const EMBED_BATCH = 100;
+
+export async function embedTexts(texts: string[], task: "RETRIEVAL_DOCUMENT" | "RETRIEVAL_QUERY"): Promise<number[][]> {
+  const vectors: number[][] = [];
+  for (let i = 0; i < texts.length; i += EMBED_BATCH) {
+    const res = await ai().models.embedContent({
+      model: EMBED_MODEL,
+      contents: texts.slice(i, i + EMBED_BATCH),
+      config: { taskType: task, outputDimensionality: EMBED_DIMENSIONS },
+    });
+    vectors.push(...(res.embeddings ?? []).map((e) => e.values ?? []));
+  }
+  if (vectors.length !== texts.length || vectors.some((v) => v.length !== EMBED_DIMENSIONS)) throw new Error("Embedding failed");
+  return vectors;
+}

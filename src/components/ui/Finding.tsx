@@ -11,7 +11,11 @@ type FindingProps = {
   reason: string;
   legalBasis: string;
   question?: string;
+  articles?: ArticleText[];
+  related?: boolean;
 };
+
+export type ArticleText = { label: string; text: string; url: string };
 
 const quoteWash: Record<VerdictKind, string> = {
   red: "bg-stop-wash",
@@ -27,6 +31,8 @@ export function Finding({
   reason,
   legalBasis,
   question,
+  articles = [],
+  related = false,
 }: FindingProps) {
   const { t } = useLang();
 
@@ -53,6 +59,29 @@ export function Finding({
       <p className="text-callout text-ink-soft">
         <span className="font-[500]">{t.finding.legalBasis}</span> {legalBasis}
       </p>
+
+      {articles.length > 0 && (
+        <details className="rounded-md bg-surface-2 px-4 py-3 text-callout text-ink-soft">
+          <summary className="cursor-pointer font-[500] text-ink">
+            {related ? t.finding.relatedArticle : t.finding.articleText}: {articles.map((a) => a.label).join("; ")}
+          </summary>
+          <div className="flex flex-col gap-3 pt-3">
+            {related && <p>{t.finding.relatedNote}</p>}
+            {articles.map((a) => (
+              <div key={a.label} className="flex flex-col gap-1">
+                <p className="font-[500] text-ink">{a.label}</p>
+                <p className="text-ink whitespace-pre-line">{a.text}</p>
+              </div>
+            ))}
+            <p className="text-footnote">
+              {t.finding.ocrNote}{" "}
+              <a href={articles[0].url} target="_blank" rel="noopener noreferrer" className="text-sign-blue underline underline-offset-4 hover:no-underline">
+                {t.finding.officialPdf}
+              </a>
+            </p>
+          </div>
+        </details>
+      )}
 
       {question && (
         <p className="text-callout text-ink-soft">

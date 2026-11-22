@@ -380,8 +380,8 @@ test("keepGroundedFlags drops quotes not in the ad and attaches the rule source"
   assert.deepEqual(
     kept.map((f) => [f.ruleId, f.source]),
     [
-      ["age-limit", "UU 13/2003 Pasal 5"],
-      ["document-holding", "Surat Edaran Menaker M/5/HK.04.00/V/2025"],
+      ["age-limit", "UU 27/2026 Pasal 6"],
+      ["document-holding", "UU 27/2026 Pasal 78 ayat (1)"],
       ["other", null],
       ["other", null],
     ],
