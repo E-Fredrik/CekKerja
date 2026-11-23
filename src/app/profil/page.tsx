@@ -16,7 +16,7 @@ type Status = { state: "idle" | "pending" | "saved" | "removed" } | { state: "er
 export default function ProfilPage() {
   const { t, lang } = useLang();
   const p = t.profile;
-  const { cv, signedIn, saveCv, clearCv } = useCvProfile();
+  const { cv, signedIn, loading, saveCv, clearCv } = useCvProfile();
   const [file, setFile] = useState<File | null>(null);
   const [replacing, setReplacing] = useState(false);
   const [status, setStatus] = useState<Status>({ state: "idle" });
@@ -38,7 +38,7 @@ export default function ProfilPage() {
         setStatus({ state: "error", message });
         return;
       }
-      saveCv(data);
+      saveCv(data?.cv);
       setFile(null);
       setReplacing(false);
       setStatus({ state: "saved" });
@@ -47,8 +47,12 @@ export default function ProfilPage() {
     }
   }
 
-  function remove() {
-    clearCv();
+  async function remove() {
+    setStatus({ state: "pending" });
+    if (!(await clearCv())) {
+      setStatus({ state: "error", message: p.removeFailed });
+      return;
+    }
     setReplacing(false);
     setStatus({ state: "removed" });
   }
@@ -60,7 +64,9 @@ export default function ProfilPage() {
         <p className="text-body text-ink-soft">{p.intro}</p>
       </header>
 
-      {!signedIn ? (
+      {loading ? (
+        <p className="text-callout text-ink-soft" role="status">{p.loading}</p>
+      ) : !signedIn ? (
         <div className="flex flex-col gap-4 max-w-2xl">
           <Notice variant="info">{p.signInNeeded}</Notice>
           <Link href="/masuk" className="self-start text-callout font-[650] text-sign-blue underline underline-offset-4 hover:no-underline">
@@ -71,6 +77,7 @@ export default function ProfilPage() {
         <div className="flex flex-col gap-6 max-w-2xl">
           {status.state === "saved" && <Notice variant="success">{p.saved}</Notice>}
           {status.state === "removed" && <Notice variant="info">{p.removed}</Notice>}
+          {status.state === "error" && cv && !replacing && <Notice variant="error">{status.message}</Notice>}
 
           {cv && !replacing ? (
             <>
@@ -81,7 +88,7 @@ export default function ProfilPage() {
                 <Button variant="secondary" onClick={() => setReplacing(true)}>
                   {p.replace}
                 </Button>
-                <Button variant="quiet" onClick={remove}>
+                <Button variant="quiet" onClick={remove} pending={pending}>
                   {p.remove}
                 </Button>
               </div>

@@ -2,6 +2,9 @@ import { test } from "node:test";
 import assert from "node:assert/strict";
 import { CV_LIMITS, cvPrompt, parseStoredCv, readCv, trimCv, type CvProfile } from "../src/lib/cv/profile.ts";
 import type { generateJson } from "../src/lib/ai/gemini.ts";
+import type { SupabaseClient } from "@supabase/supabase-js";
+import { CV_TABLE, deleteCv, loadCv, signedInUserId, storeCv } from "../src/lib/cv/store.ts";
+import { handle, SignInNeeded } from "../src/lib/http.ts";
 
 const sample: CvProfile = {
   name: "Budi Santoso",
@@ -59,17 +62,67 @@ test("readCv sends the file to the model in fast mode and trims the answer", asy
   assert.deepEqual(out.skills, ["Excel", "Python"]);
 });
 
-test("the cv route rejects a request without a file", async () => {
-  const quiet = console.error;
-  console.error = () => {};
-  try {
-    const { POST } = await import("../src/app/api/cv/route.ts");
-    const form = new FormData();
-    form.append("lang", "id");
-    const res = await POST(new Request("http://x/api/cv", { method: "POST", body: form }));
-    assert.equal(res.status, 400);
-    assert.deepEqual(await res.json(), { error: "CV: file is missing", code: "fileMissing" });
-  } finally {
-    console.error = quiet;
-  }
+test("a request that is not signed in gets 401 with the signIn code", async () => {
+  const res = await handle(async () => signedInUserId(null))(new Request("http://x/api/cv"));
+  assert.equal(res.status, 401);
+  assert.deepEqual(await res.json(), { error: "Sign in first", code: "signIn" });
+});
+
+type Call = { table: string; op: string; args: unknown[] };
+
+function fakeDb(claims: unknown, row: unknown = null, error: { message: string } | null = null) {
+  const calls: Call[] = [];
+  const query = (table: string) => {
+    const chain = {
+      select: (...args: unknown[]) => (calls.push({ table, op: "select", args }), chain),
+      upsert: (...args: unknown[]) => (calls.push({ table, op: "upsert", args }), Promise.resolve({ error })),
+      delete: () => (calls.push({ table, op: "delete", args: [] }), chain),
+      eq: (...args: unknown[]) => (calls.push({ table, op: "eq", args }), Object.assign(Promise.resolve({ error }), chain)),
+      maybeSingle: () => Promise.resolve({ data: row, error }),
+    };
+    return chain;
+  };
+  const db = { auth: { getClaims: async () => ({ data: claims ? { claims } : null }) }, from: query };
+  return { db: db as unknown as SupabaseClient, calls };
+}
+
+const OTP = [{ method: "password" }, { method: "otp" }];
+
+test("signedInUserId needs a user and the email code as second factor", async () => {
+  assert.equal(await signedInUserId(fakeDb({ sub: "u1", amr: OTP }).db), "u1");
+  await assert.rejects(signedInUserId(null), SignInNeeded);
+  await assert.rejects(signedInUserId(fakeDb(null).db), SignInNeeded);
+  await assert.rejects(signedInUserId(fakeDb({ sub: "u1", amr: [{ method: "password" }] }).db), SignInNeeded);
+});
+
+test("loadCv returns the stored profile, or null for no row or a broken one", async () => {
+  const { db, calls } = fakeDb(null, { profile: sample });
+  assert.deepEqual(await loadCv(db, "u1"), sample);
+  assert.deepEqual(calls, [
+    { table: CV_TABLE, op: "select", args: ["profile"] },
+    { table: CV_TABLE, op: "eq", args: ["user_id", "u1"] },
+  ]);
+  assert.equal(await loadCv(fakeDb(null, null).db, "u1"), null);
+  assert.equal(await loadCv(fakeDb(null, { profile: { name: "x" } }).db, "u1"), null);
+});
+
+test("storeCv trims the profile and saves it to the user's own row", async () => {
+  const { db, calls } = fakeDb(null);
+  const saved = await storeCv(db, "u1", { ...sample, skills: ["Excel", "  "] });
+  assert.deepEqual(saved.skills, ["Excel"]);
+  const row = calls[0].args[0] as { user_id: string; profile: CvProfile };
+  assert.equal(calls[0].op, "upsert");
+  assert.equal(row.user_id, "u1");
+  assert.deepEqual(row.profile, saved);
+});
+
+test("deleteCv deletes only the user's row, and database errors are not hidden", async () => {
+  const { db, calls } = fakeDb(null);
+  await deleteCv(db, "u1");
+  assert.deepEqual(calls.map((c) => c.op), ["delete", "eq"]);
+  assert.deepEqual(calls[1].args, ["user_id", "u1"]);
+  const broken = fakeDb(null, null, { message: "permission denied" }).db;
+  await assert.rejects(storeCv(broken, "u1", sample), /permission denied/);
+  await assert.rejects(deleteCv(broken, "u1"), /permission denied/);
+  await assert.rejects(loadCv(broken, "u1"), /permission denied/);
 });
