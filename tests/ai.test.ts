@@ -157,7 +157,7 @@ test("applyNumberChecks lets code decide number rules and never the model", () =
       ["pkwt-probation", "red"],
     ],
   );
-  assert.deepEqual(out.numberChecks, [{ ruleId: "internship-length", verdict: "red", found: 18, limit: 12 }]);
+  assert.deepEqual(out.numberChecks, [{ ruleId: "internship-length", verdict: "red", found: 18, limit: 6 }]);
 });
 
 test("applyNumberChecks uses the wage check once a minimum wage is known", () => {
@@ -170,7 +170,7 @@ test("applyNumberChecks attaches sources and maps unknown or ad-only rules to ot
   assert.deepEqual(
     out.clauses.map((c) => [c.ruleId, c.source]),
     [
-      ["pkwt-probation", "UU 13/2003 Pasal 58"],
+      ["pkwt-probation", "UU 27/2026 Pasal 86"],
       ["other", null],
       ["other", null],
     ],
@@ -191,7 +191,7 @@ test("analyzeContract sends the file to the model and applies the number checks"
     return contract({ contractType: "PKWT", durationMonths: 72, clauses: [clause("pkwt-length", "green")] });
   }) as unknown as typeof generateJson;
   const file = new File([new Uint8Array([37, 80, 68, 70])], "kontrak.pdf", { type: "application/pdf" });
-  const out = await analyzeContract(file, "id", "smart", generate);
+  const out = await analyzeContract(file, "id", "smart", generate, async (texts) => texts.map(() => null));
   assert.deepEqual(seen, { mime: "application/pdf", mode: "smart" });
   assert.equal(out.clauses[0].verdict, "red");
 });

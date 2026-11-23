@@ -14,7 +14,7 @@ test("every rule has a unique id, a scope, a source and both languages", () => {
 });
 
 test("ruleById finds a rule and returns undefined for unknown ids", () => {
-  assert.equal(ruleById("pkwt-probation")?.source, "UU 13/2003 Pasal 58");
+  assert.equal(ruleById("pkwt-probation")?.source, "UU 27/2026 Pasal 86");
   assert.equal(ruleById("other"), undefined);
 });
 
@@ -39,14 +39,14 @@ test("checkWage skips unknown or invalid numbers", () => {
   assert.equal(checkWage(0, 3_500_000), null);
 });
 
-test("checkDuration allows internships up to 12 months", () => {
-  assert.equal(checkDuration("magang", 12)?.verdict, "green");
-  assert.deepEqual(checkDuration("magang", 13), { ruleId: "internship-length", verdict: "red", found: 13, limit: 12 });
+test("checkDuration allows internships up to 6 months", () => {
+  assert.equal(checkDuration("magang", 6)?.verdict, "green");
+  assert.deepEqual(checkDuration("magang", 7), { ruleId: "internship-length", verdict: "red", found: 7, limit: 6 });
 });
 
-test("checkDuration allows PKWT up to 5 years", () => {
-  assert.equal(checkDuration("PKWT", 60)?.verdict, "green");
-  assert.equal(checkDuration("PKWT", 61)?.verdict, "red");
+test("checkDuration allows one PKWT term of up to 2 years", () => {
+  assert.equal(checkDuration("PKWT", 24)?.verdict, "green");
+  assert.equal(checkDuration("PKWT", 25)?.verdict, "red");
 });
 
 test("checkDuration skips permanent, unknown and missing durations", () => {

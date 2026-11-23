@@ -2,8 +2,8 @@ import type { ContractResult, Verdict } from "../ai/schemas.ts";
 
 export type NumberFinding = { ruleId: string; verdict: Verdict; found: number; limit: number };
 
-export const INTERNSHIP_MAX_MONTHS = 12;
-export const PKWT_MAX_MONTHS = 60;
+export const INTERNSHIP_MAX_MONTHS = 6;
+export const PKWT_MAX_MONTHS = 24;
 
 const known = (n: number | null | undefined): n is number => typeof n === "number" && Number.isFinite(n) && n > 0;
 
