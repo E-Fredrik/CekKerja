@@ -63,6 +63,7 @@ Status is updated with every feature pull request: Not started, In progress, Don
 - Scrapling page reader ready: job ad, company and portfolio links are read through Scrapling, so public LinkedIn job ad pages (`linkedin.com/jobs/view/...`) can be checked too. Only those LinkedIn pages are read, signed out and without cookies; profiles, people and search pages, Glassdoor, Indeed and social media are refused, and every other page still respects robots.txt, private-address blocking and time and size limits. When Python or Scrapling is not available, the built-in reader takes over.
 - Real accounts with Supabase: signing up and signing in now create and open a real account instead of a demo kept in the browser, the job ad, contract and interview checks ask you to sign in first and bring you back to the page you wanted afterwards, and signing out ends the session everywhere on that browser.
 - Two-step sign in by email: after your password, a 6-digit code is emailed to you and you are only signed in once you type it in; a code works for 10 minutes and 5 tries, a new one can be sent once a minute and 5 times an hour, and new accounts confirm their email the same way.
+- CV saved to your account: the CV profile now lives in your account on Supabase instead of the browser, so it follows you to any device; only you can read, replace or delete it, and only after signing in with the email code.
 
 ## Contributors
 
