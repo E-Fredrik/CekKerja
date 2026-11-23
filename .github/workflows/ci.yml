@@ -42,6 +42,8 @@ jobs:
         run: |
           cp -r .next/static .next/standalone/.next/static
           cp -r public .next/standalone/public
+          mkdir -p .next/standalone/scripts
+          cp scripts/scrapling_fetch.py .next/standalone/scripts/
       - name: Set up SSH
         env:
           SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
@@ -55,6 +57,27 @@ jobs:
         env:
           VPS: ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}
         run: rsync -az --delete --exclude .env .next/standalone/ "$VPS:htdocs/cekkerja.ked.my.id/"
+      - name: Install Scrapling on the VPS
+        env:
+          VPS: ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}
+        run: |
+          ssh "$VPS" 'bash -s' <<'EOF'
+          set -uo pipefail
+          VENV="$HOME/scrapling-venv"
+          APP_ENV="$HOME/htdocs/cekkerja.ked.my.id/.env"
+          if ! python3 -c 'import sys; sys.exit(sys.version_info < (3, 10))' 2>/dev/null; then
+            echo "Python 3.10 or newer is missing; the built-in fetcher stays in use."
+            exit 0
+          fi
+          if ! "$VENV/bin/python" -c 'import scrapling' 2>/dev/null; then
+            python3 -m venv "$VENV" && "$VENV/bin/pip" install --quiet "scrapling[fetchers]==0.5.1" || {
+              echo "Scrapling could not be installed; the built-in fetcher stays in use."
+              exit 0
+            }
+          fi
+          grep -q '^SCRAPLING_PYTHON=' "$APP_ENV" || printf '\nSCRAPLING_PYTHON=%s\n' "$VENV/bin/python" >> "$APP_ENV"
+          "$VENV/bin/python" -c 'import scrapling; print("Scrapling", scrapling.__version__)'
+          EOF
       - name: Restart the app
         env:
           VPS: ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}
