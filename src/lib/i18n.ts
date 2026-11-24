@@ -244,6 +244,7 @@ const id = {
     copy: "Salin versi inklusif",
     copied: "Tersalin",
     again: "Periksa lowongan lain",
+    resultTitle: "Hasil pemeriksaan lowongan",
     rules: {
       "equal-opportunity": "Diskriminasi",
       "age-limit": "Batas usia",
@@ -335,6 +336,7 @@ const id = {
     title: "Latihan interview",
     intro: "Isi posisi yang kamu lamar. Kami membaca iklan lowongan, situs perusahaan dan halaman pertanyaan interview publik, lalu menyusun pertanyaan latihan yang cocok untuk kamu.",
     roleLabel: "Posisi yang dilamar",
+    newTab: "(buka di tab baru)",
     rolePlaceholder: "Contoh: Staf Admin",
     companyLabel: "Nama perusahaan",
     jobTextLabel: "Teks lowongan",
@@ -640,6 +642,7 @@ const en: Dict = {
     copy: "Copy inclusive version",
     copied: "Copied",
     again: "Check another job ad",
+    resultTitle: "Job ad check result",
     rules: {
       "equal-opportunity": "Discrimination",
       "age-limit": "Age limit",
@@ -731,6 +734,7 @@ const en: Dict = {
     title: "Interview prep",
     intro: "Enter the role you are applying for. We read the job ad, the company site and public interview question pages, then put together practice questions that fit you.",
     roleLabel: "Role you are applying for",
+    newTab: "(opens in a new tab)",
     rolePlaceholder: "For example: Admin Staff",
     companyLabel: "Company name",
     jobTextLabel: "Job ad text",

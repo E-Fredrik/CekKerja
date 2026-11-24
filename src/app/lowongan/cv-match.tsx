@@ -41,6 +41,9 @@ export function CvMatchSection({ adText }: { adText: string }) {
         </>
       ) : (
         <>
+          <p role="status" className="sr-only">
+            {state.status === "done" && state.result.score !== null ? t.match.score.replace("{score}", String(state.result.score)) : ""}
+          </p>
           {state.status === "done" && <MatchList match={state.result} />}
           {pending && <Notice variant="info">{t.match.pending}</Notice>}
           {state.status === "error" && <Notice variant="error">{state.message}</Notice>}
@@ -66,7 +69,7 @@ function MatchList({ match }: { match: CvMatch }) {
         <p className="text-callout text-ink-soft">{t.match.scoreNote}</p>
       </div>
       <p className="text-body text-ink">{match.summary}</p>
-      <ul className="flex flex-col">
+      <ul className="flex flex-col wrap-anywhere">
         {requirements.map((r, i) => (
           <li key={i} className="flex flex-col gap-2 py-4 border-b border-line last:border-b-0">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
