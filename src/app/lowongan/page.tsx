@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { AdCheck, CheckedFlag } from "@/app/api/check-ad/analyze-ad.ts";
 import type { Verdict } from "@/lib/ai/schemas.ts";
 import { Button } from "@/components/ui/Button.tsx";
@@ -22,6 +22,7 @@ export default function LowonganPage() {
   const [text, setText] = useState("");
   const [url, setUrl] = useState("");
   const pending = state.status === "pending";
+  const titleRef = useRef<HTMLHeadingElement>(null);
 
   function submit(e: FormEvent) {
     e.preventDefault();
@@ -32,12 +33,15 @@ export default function LowonganPage() {
     setText("");
     setUrl("");
     reset();
+    titleRef.current?.focus();
   }
 
   return (
     <div className="mx-auto max-w-[76rem] px-4 sm:px-6 lg:px-8 py-12 flex flex-col gap-12">
       <header className="flex flex-col gap-3 max-w-prose">
-        <h1 className="text-large-title text-ink">{t.lowongan.title}</h1>
+        <h1 ref={titleRef} tabIndex={-1} className="text-large-title text-ink focus-visible:outline-none">
+          {t.lowongan.title}
+        </h1>
         <p className="text-body text-ink-soft">{t.lowongan.intro}</p>
       </header>
 
@@ -79,6 +83,8 @@ export default function LowonganPage() {
 function Result({ check, onAgain }: { check: AdCheck; onAgain: () => void }) {
   const { t } = useLang();
   const [copied, setCopied] = useState(false);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => headingRef.current?.focus(), []);
   const flags = check.flags
     .map((f, i) => ({ f, i }))
     .sort((a, b) => VERDICT_ORDER[a.f.verdict] - VERDICT_ORDER[b.f.verdict] || a.i - b.i)
@@ -98,6 +104,9 @@ function Result({ check, onAgain }: { check: AdCheck; onAgain: () => void }) {
 
   return (
     <div className="flex flex-col gap-8">
+      <h2 ref={headingRef} tabIndex={-1} className="sr-only">
+        {t.lowongan.resultTitle}
+      </h2>
       <SummaryPlate
         headline={headline}
         documentLabel={[check.role, check.company].filter(Boolean).join(" · ")}
@@ -125,7 +134,7 @@ function Result({ check, onAgain }: { check: AdCheck; onAgain: () => void }) {
             {t.lowongan.rewriteTitle}
           </h2>
           <p className="text-callout text-ink-soft">{t.lowongan.rewriteHint}</p>
-          <p className="bg-surface-2 text-quote text-ink rounded-md px-4 py-3 whitespace-pre-line">{check.inclusiveRewrite}</p>
+          <p className="bg-surface-2 text-quote text-ink rounded-md px-4 py-3 whitespace-pre-line wrap-anywhere">{check.inclusiveRewrite}</p>
         </section>
       )}
 
@@ -133,13 +142,16 @@ function Result({ check, onAgain }: { check: AdCheck; onAgain: () => void }) {
 
       <div className="flex flex-wrap gap-3">
         {check.inclusiveRewrite && (
-          <Button onClick={copy} aria-live="polite">
+          <Button onClick={copy}>
             {copied ? t.lowongan.copied : t.lowongan.copy}
           </Button>
         )}
         <Button variant="secondary" onClick={onAgain}>
           {t.lowongan.again}
         </Button>
+        <span role="status" className="sr-only">
+          {copied ? t.lowongan.copied : ""}
+        </span>
       </div>
     </div>
   );
