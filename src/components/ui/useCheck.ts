@@ -15,6 +15,12 @@ type UseCheckReturn<T> = {
   reset: () => void;
 };
 
+const historyPaths = new Map([
+  ["/api/check-ad", "/api/history/ad"],
+  ["/api/check-contract", "/api/history/contract"],
+  ["/api/interview", "/api/history/interview"],
+]);
+
 export function useCheck<T>(url: string): UseCheckReturn<T> {
   const { t } = useLang();
   const [state, setState] = useState<CheckState<T>>({ status: "idle" });
@@ -24,9 +30,13 @@ export function useCheck<T>(url: string): UseCheckReturn<T> {
       setState({ status: "pending" });
       try {
         const isFormData = body instanceof FormData;
-        const res = await fetch(url, {
+        const historyPath = historyPaths.get(url);
+        const headers: Record<string, string> = {};
+        if (!isFormData) headers["Content-Type"] = "application/json";
+        if (historyPath) headers["X-CekKerja-History"] = "1";
+        const res = await fetch(historyPath ?? url, {
           method: "POST",
-          headers: isFormData ? undefined : { "Content-Type": "application/json" },
+          headers,
           body: isFormData ? body : JSON.stringify(body),
         });
 
