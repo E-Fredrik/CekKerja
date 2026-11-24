@@ -182,7 +182,6 @@ const id = {
     errors: {
       fileMissing: "Pilih file dulu.",
       signIn: "Masuk dulu, lalu coba lagi.",
-      historySave: "Hasil belum bisa disimpan ke riwayat. Coba periksa lagi sebentar lagi.",
       fileType: "Format tidak didukung. Gunakan PDF, PNG, JPG, atau WEBP.",
       fileSize: "File terlalu besar. Maksimum 8 MB.",
       busy: "Layanan AI sedang sibuk. Tunggu sebentar, lalu coba lagi.",
@@ -589,7 +588,6 @@ const en: Dict = {
     errors: {
       fileMissing: "Choose a file first.",
       signIn: "Sign in first, then try again.",
-      historySave: "The result could not be saved to history. Try the check again in a moment.",
       fileType: "Format not supported. Use PDF, PNG, JPG, or WEBP.",
       fileSize: "File too large. Maximum 8 MB.",
       busy: "The AI service is busy right now. Wait a moment and try again.",

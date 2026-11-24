@@ -26,12 +26,16 @@ export async function POST(request: Request, { params }: { params: Promise<{ kin
     if (!response.ok) return response;
 
     const result = await response.json();
-    await saveHistory(db, userId, historyEntry(kind.data, result));
+    try {
+      await saveHistory(db, userId, historyEntry(kind.data, result));
+    } catch {
+      console.warn(`Check history not saved for a ${kind.data} check`);
+    }
     return Response.json(result, { headers });
   } catch (error) {
     if (error instanceof SignInNeeded) {
       return Response.json({ code: "signIn" }, { status: 401, headers });
     }
-    return Response.json({ code: "historySave" }, { status: 503, headers });
+    return Response.json({ code: "unknown" }, { status: 500, headers });
   }
 }
