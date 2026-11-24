@@ -1,4 +1,4 @@
-export const PROTECTED_PATHS = ["/lowongan", "/kontrak", "/interview"];
+export const PROTECTED_PATHS = ["/lowongan", "/kontrak", "/interview", "/riwayat"];
 
 export const GUEST_ONLY_PATHS = ["/masuk", "/daftar"];
 

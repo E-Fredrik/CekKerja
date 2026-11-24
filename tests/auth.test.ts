@@ -14,6 +14,37 @@ import {
 } from "../src/lib/auth/sign-in-code.ts";
 import { supabaseConfig } from "../src/lib/db/config.ts";
 import { MIN_SIGNUP_STRENGTH, isCommonPassword, passwordStrength } from "../src/lib/auth/password-strength.ts";
+import { historyCursor, historyEntry } from "../src/lib/db/history.ts";
+
+test("check history requires sign-in", () => {
+  assert.equal(isProtectedPath("/riwayat"), true);
+});
+
+test("check history keeps useful summaries without saving source documents or candidate details", () => {
+  assert.deepEqual(historyEntry("ad", {
+    role: "Analyst", company: "Example", summary: "Review an age limit", adText: "Full ad",
+    flags: [{ verdict: "red", quote: "Source quote" }, { verdict: "yellow" }],
+  }), {
+    kind: "ad", role: "Analyst", company: "Example", summary: "Review an age limit",
+    counts: { red: 1, yellow: 1, green: 0 },
+  });
+  assert.deepEqual(historyEntry("contract", {
+    summary: "Check the probation clause", clauses: [{ verdict: "green", text: "Clause text" }],
+  }), {
+    kind: "contract", summary: "Check the probation clause", counts: { red: 0, yellow: 0, green: 1 },
+  });
+  assert.deepEqual(historyEntry("interview", {
+    role: "Analyst", company: "Example", candidateSnapshot: "Private CV detail", questions: [{ question: "Practice question" }],
+  }), { kind: "interview", role: "Analyst", company: "Example", questionCount: 1 });
+  assert.throws(() => historyEntry("ad", { summary: "Invalid result" }));
+});
+
+test("history cursors preserve database timestamps and reject malformed filters", () => {
+  const cursor = { id: "f572d8e1-7c1a-4e35-90f8-d4716ac8144e", created_at: "2026-11-24T09:11:12.123456+00:00" };
+  assert.deepEqual(historyCursor.parse(cursor), cursor);
+  assert.equal(historyCursor.safeParse({ ...cursor, id: `${cursor.id}),user_id.neq.x` }).success, false);
+  assert.equal(historyCursor.safeParse({ ...cursor, created_at: "2026-11-24" }).success, false);
+});
 
 const validSignup: AuthInput = {
   email: "kenneth@example.com",
@@ -149,7 +180,7 @@ test("Supabase auth errors map to messages the page can translate", () => {
   assert.equal(authServerError(null), "unknown");
 });
 
-test("only the three tools need an account, and sign in pages are for guests", () => {
+test("the tools and history need an account, and sign in pages are for guests", () => {
   for (const path of ["/lowongan", "/kontrak", "/interview", "/kontrak/hasil"]) assert.equal(isProtectedPath(path), true, path);
   for (const path of ["/", "/profil", "/masuk", "/kontrakan", "/api/check-contract"]) assert.equal(isProtectedPath(path), false, path);
   assert.equal(isGuestOnlyPath("/masuk"), true);

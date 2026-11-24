@@ -49,6 +49,7 @@ export function NavBar() {
         { href: "/lowongan", label: t.nav.lowongan },
         { href: "/kontrak", label: t.nav.kontrak },
         { href: "/interview", label: t.nav.interview },
+        { href: "/riwayat", label: t.nav.riwayat },
       ]
     : [];
 
@@ -79,7 +80,7 @@ export function NavBar() {
 
           <nav
             aria-label="Navigasi utama"
-            className="hidden min-[720px]:flex items-center gap-1"
+            className="hidden min-[720px]:flex min-w-0 items-center gap-1 overflow-x-auto py-1"
           >
             {links.map(({ href, label }) => {
               const current = pathname === href || pathname.startsWith(href + "/");
@@ -89,7 +90,7 @@ export function NavBar() {
                   href={href}
                   aria-current={current ? "page" : undefined}
                   className={[
-                    "relative px-3 py-1.5 text-[15px] font-[600] rounded-md transition-colors",
+                    "relative px-3 py-1.5 text-[15px] font-[600] rounded-md whitespace-nowrap transition-colors",
                     current
                       ? "text-on-shell"
                       : "text-on-shell-soft hover:text-on-shell",
