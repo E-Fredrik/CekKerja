@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { InterviewPrep } from "@/app/api/interview/prepare-interview.ts";
 import type { Mode } from "@/lib/ai/gemini.ts";
 import type { InterviewQuestion } from "@/lib/ai/schemas.ts";
@@ -20,7 +20,14 @@ const EMPTY = { role: "", company: "", jobText: "", jobUrl: "", companyUrl: "", 
 
 const LINK = "text-callout font-[650] text-sign-blue underline underline-offset-4 hover:no-underline";
 
-const isWebLink = (url: string) => /^https?:\/\//i.test(url);
+function webHost(url: string): string | null {
+  if (!/^https?:\/\//i.test(url)) return null;
+  try {
+    return new URL(url).hostname;
+  } catch {
+    return null;
+  }
+}
 
 export default function InterviewPage() {
   const { t, lang } = useLang();
@@ -30,6 +37,7 @@ export default function InterviewPage() {
   const [portfolioFile, setPortfolioFile] = useState<File | null>(null);
   const { cv, signedIn } = useCvProfile();
   const pending = state.status === "pending";
+  const titleRef = useRef<HTMLHeadingElement>(null);
 
   const set = (key: keyof typeof EMPTY) => (e: { target: { value: string } }) => setForm({ ...form, [key]: e.target.value });
 
@@ -48,12 +56,15 @@ export default function InterviewPage() {
     setForm(EMPTY);
     setPortfolioFile(null);
     reset();
+    titleRef.current?.focus();
   }
 
   return (
     <div className="mx-auto max-w-[76rem] px-4 sm:px-6 lg:px-8 py-12 flex flex-col gap-12">
       <header className="flex flex-col gap-3 max-w-prose">
-        <h1 className="text-large-title text-ink">{t.interview.title}</h1>
+        <h1 ref={titleRef} tabIndex={-1} className="text-large-title text-ink focus-visible:outline-none">
+          {t.interview.title}
+        </h1>
         <p className="text-body text-ink-soft">{t.interview.intro}</p>
       </header>
 
@@ -85,7 +96,7 @@ export default function InterviewPage() {
             )}
           </p>
           <fieldset className="flex flex-col gap-3" disabled={pending}>
-            <legend className="text-[16px] font-[600] text-ink mb-1">{t.interview.portfolioTitle}</legend>
+            <legend className="text-headline text-ink mb-1">{t.interview.portfolioTitle}</legend>
             <p className="text-callout text-ink-soft">{t.interview.portfolioHint}</p>
             <FileDrop onFile={setPortfolioFile} disabled={pending} />
             <Field type="url" inputMode="url" label={t.interview.portfolioUrlLabel} placeholder="https://" value={form.portfolioUrl} onChange={set("portfolioUrl")} disabled={pending} />
@@ -117,10 +128,12 @@ export default function InterviewPage() {
 
 function Result({ prep, onAgain }: { prep: InterviewPrep; onAgain: () => void }) {
   const { t } = useLang();
+  const headingRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => headingRef.current?.focus(), []);
   return (
     <div className="flex flex-col gap-8">
       <section className={`${SURFACE} flex flex-col gap-3`} aria-labelledby="snapshot-title">
-        <h2 id="snapshot-title" className="text-title-2 text-ink">
+        <h2 id="snapshot-title" ref={headingRef} tabIndex={-1} className="text-title-2 text-ink focus-visible:outline-none">
           {[prep.role, prep.company].filter(Boolean).join(" · ")}
         </h2>
         <p className="text-body text-ink">{prep.candidateSnapshot}</p>
@@ -153,7 +166,9 @@ function Result({ prep, onAgain }: { prep: InterviewPrep; onAgain: () => void })
 
       {prep.unreadSources.length > 0 && (
         <Notice variant="info">
-          {t.interview.unread} {prep.unreadSources.map((s) => s.url).join(", ")}
+          <span className="wrap-anywhere">
+            {t.interview.unread} {prep.unreadSources.map((s) => s.url).join(", ")}
+          </span>
         </Notice>
       )}
 
@@ -168,7 +183,7 @@ function Result({ prep, onAgain }: { prep: InterviewPrep; onAgain: () => void })
 
 function QuestionItem({ question, code }: { question: InterviewQuestion; code: string }) {
   const { t } = useLang();
-  const fromWeb = isWebLink(question.source);
+  const host = webHost(question.source);
   return (
     <li className="flex flex-col gap-3 py-5 first:pt-0 last:pb-0 border-b border-line last:border-b-0">
       <div className="flex items-baseline justify-between gap-2">
@@ -184,9 +199,10 @@ function QuestionItem({ question, code }: { question: InterviewQuestion; code: s
       </p>
       <p className="text-callout text-ink-soft">
         {t.interview.source}{" "}
-        {fromWeb ? (
+        {host ? (
           <a href={question.source} target="_blank" rel="noopener noreferrer" className="underline text-sign-blue break-all">
-            {new URL(question.source).hostname}
+            {host}
+            <span className="sr-only"> {t.interview.newTab}</span>
           </a>
         ) : (
           t.interview.generated
