@@ -25,7 +25,7 @@ Status is updated with every feature pull request: Not started, In progress, Don
 | Bilingual interface | Every page in Bahasa Indonesia and English, with a language toggle. | In progress |
 | Web mailer | Emails a result to the user's own address. | In progress |
 | Accounts and history | Sign up, log in, and see summaries of past checks and interview practice. | Done |
-| Premium | Free plan with monthly limits; Premium through Midtrans. | Not started |
+| Premium | Free plan with monthly limits; Premium through Midtrans. | Done |
 
 ## Progress so far
 
@@ -66,6 +66,7 @@ Status is updated with every feature pull request: Not started, In progress, Don
 - Check history is ready: signed-in users can see dated summaries of their job ad checks, contract checks and interview practice in the History tab.
 - Law corpus and citations: the labour rules now follow the new Labour Protection Law (UU 27/2026), which replaced UU 13/2003 on 28 October 2026, including its shorter limits (an internship lasts at most 6 months and one fixed-term contract at most 2 years). Every contract finding can open the exact text of the article it cites, with a link to the official PDF, and a clause that no rule covers is matched to the closest article of the law through a vector search in Supabase, shown only when the match is close and labelled as possibly related.
 - Accessibility and mobile pass for the job ad check and interview prep: when a result appears or you start over, keyboard and screen-reader focus moves to it; the CV match score and "Copied" are announced; source links say they open a new tab; long links wrap at phone width; and an odd source link can no longer break the interview results.
+- Premium and Midtrans payment ready: free accounts get 5 checks per month in fast mode, and Premium (Rp15.000 for 30 days via Midtrans Snap) unlocks unlimited checks, thorough AI mode, and emailing results.
 
 ## Contributors
 
