@@ -38,6 +38,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
+        env:
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY }}
       - name: Assemble the standalone app
         run: |
           cp -r .next/static .next/standalone/.next/static
@@ -77,6 +80,16 @@ jobs:
           fi
           grep -q '^SCRAPLING_PYTHON=' "$APP_ENV" || printf '\nSCRAPLING_PYTHON=%s\n' "$VENV/bin/python" >> "$APP_ENV"
           "$VENV/bin/python" -c 'import scrapling; print("Scrapling", scrapling.__version__)'
+          EOF
+      - name: Check the server settings
+        env:
+          VPS: ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}
+        run: |
+          ssh "$VPS" 'bash -s' <<'EOF'
+          APP_ENV="$HOME/htdocs/cekkerja.ked.my.id/.env"
+          for name in GEMINI_API_KEY NEXT_PUBLIC_SUPABASE_URL NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY SUPABASE_SECRET_KEY SMTP_HOST SMTP_PORT SMTP_USER SMTP_PASS MAIL_FROM MIDTRANS_SERVER_KEY MIDTRANS_CLIENT_KEY; do
+            grep -q "^$name=." "$APP_ENV" || echo "::warning::$name is not set in the server .env"
+          done
           EOF
       - name: Restart the app
         env:
