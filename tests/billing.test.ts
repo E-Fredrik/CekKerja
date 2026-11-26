@@ -136,6 +136,7 @@ test("settlePremiumOrder activates premium once and is idempotent on duplicate w
     order: { order_id: "CK-20261125-aaaa1111", user_id: "user-1", amount: 15000, status: "pending" },
     sub: null as { user_id: string; premium_until: string } | null,
     upserts: 0,
+    failUpsert: false,
   };
 
   const fakeDb = {
@@ -148,10 +149,19 @@ test("settlePremiumOrder activates premium once and is idempotent on duplicate w
             }),
           }),
           update: (values: { status: string }) => ({
-            eq: async () => {
-              state.order.status = values.status;
-              return { error: null };
-            },
+            eq: () => ({
+              neq: () => ({
+                select: async () => {
+                  if (state.order.status === "paid") return { data: [], error: null };
+                  state.order.status = values.status;
+                  return { data: [{ order_id: state.order.order_id }], error: null };
+                },
+              }),
+              then: (resolve: (value: { error: null }) => void) => {
+                state.order.status = values.status;
+                resolve({ error: null });
+              },
+            }),
           }),
         };
       }
@@ -162,6 +172,7 @@ test("settlePremiumOrder activates premium once and is idempotent on duplicate w
           }),
         }),
         upsert: async (values: { user_id: string; premium_until: string }) => {
+          if (state.failUpsert) return { error: { message: "down" } };
           state.upserts += 1;
           state.sub = values;
           return { error: null };
@@ -187,4 +198,20 @@ test("settlePremiumOrder activates premium once and is idempotent on duplicate w
   );
   assert.deepEqual(second, { status: "paid", userId: "user-1" });
   assert.equal(state.upserts, 1);
+
+  state.order.status = "pending";
+  state.failUpsert = true;
+  await assert.rejects(
+    settlePremiumOrder(fakeDb, { order_id: state.order.order_id, gross_amount: "15000.00", transaction_status: "settlement" }, now),
+    /Could not activate premium/,
+  );
+  assert.equal(state.order.status, "pending");
+  state.failUpsert = false;
+  const retried = await settlePremiumOrder(
+    fakeDb,
+    { order_id: state.order.order_id, gross_amount: "15000.00", transaction_status: "settlement" },
+    now,
+  );
+  assert.deepEqual(retried, { status: "paid", userId: "user-1" });
+  assert.equal(state.upserts, 2);
 });

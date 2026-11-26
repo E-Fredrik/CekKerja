@@ -51,7 +51,7 @@ export async function settlePremiumOrder(
   }
 
   const nowIso = now.toISOString();
-  const { error: updateErr } = await db
+  const { data: claimed, error: updateErr } = await db
     .from("premium_orders")
     .update({
       status: nextStatus,
@@ -60,31 +60,36 @@ export async function settlePremiumOrder(
       paid_at: nextStatus === "paid" ? nowIso : null,
       updated_at: nowIso,
     })
-    .eq("order_id", input.order_id);
+    .eq("order_id", input.order_id)
+    .neq("status", "paid")
+    .select("order_id");
 
   if (updateErr) throw new Error("Could not update payment order");
 
   if (nextStatus === "paid") {
-    const { data: sub, error: subErr } = await db
-      .from("premium_subscriptions")
-      .select("premium_until")
-      .eq("user_id", order.user_id)
-      .maybeSingle();
-
-    if (subErr) throw new Error("Could not load subscription");
-
-    const premiumUntil = extendPremiumUntil(sub?.premium_until ?? null, now);
-    const { error: upsertErr } = await db.from("premium_subscriptions").upsert(
-      {
-        user_id: order.user_id,
-        premium_until: premiumUntil,
-        updated_at: nowIso,
-      },
-      { onConflict: "user_id" },
-    );
-
-    if (upsertErr) throw new Error("Could not activate premium");
+    if (!claimed?.length) return { status: "paid", userId: order.user_id };
+    try {
+      await activatePremium(db, order.user_id, now);
+    } catch (error) {
+      await db.from("premium_orders").update({ status: "pending", paid_at: null, updated_at: nowIso }).eq("order_id", input.order_id);
+      throw error;
+    }
   }
 
   return { status: nextStatus, userId: order.user_id };
+}
+
+async function activatePremium(db: SupabaseClient, userId: string, now: Date) {
+  const { data: sub, error: subErr } = await db
+    .from("premium_subscriptions")
+    .select("premium_until")
+    .eq("user_id", userId)
+    .maybeSingle();
+  if (subErr) throw new Error("Could not load subscription");
+
+  const { error: upsertErr } = await db.from("premium_subscriptions").upsert(
+    { user_id: userId, premium_until: extendPremiumUntil(sub?.premium_until ?? null, now), updated_at: now.toISOString() },
+    { onConflict: "user_id" },
+  );
+  if (upsertErr) throw new Error("Could not activate premium");
 }
