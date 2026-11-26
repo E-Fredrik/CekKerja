@@ -1,6 +1,7 @@
 import { POST as checkAd } from "../../check-ad/route.ts";
 import { POST as checkContract } from "../../check-contract/route.ts";
 import { POST as prepareInterview } from "../../interview/route.ts";
+import { canRunCheck, loadPlanStatus } from "../../../../lib/billing/plan.ts";
 import { signedInUserId } from "../../../../lib/cv/store.ts";
 import { historyEntry, historyKind, saveHistory } from "../../../../lib/db/history.ts";
 import { routeSupabase } from "../../../../lib/db/server.ts";
@@ -8,6 +9,21 @@ import { SignInNeeded } from "../../../../lib/http.ts";
 
 const handlers = { ad: checkAd, contract: checkContract, interview: prepareInterview };
 const headers = { "Cache-Control": "private, no-store" };
+
+async function requestedMode(request: Request): Promise<"fast" | "smart"> {
+  const clone = request.clone();
+  const type = clone.headers.get("content-type") ?? "";
+  try {
+    if (type.includes("multipart/form-data")) {
+      const form = await clone.formData();
+      return form.get("mode") === "smart" ? "smart" : "fast";
+    }
+    const body = (await clone.json()) as { mode?: unknown };
+    return body?.mode === "smart" ? "smart" : "fast";
+  } catch {
+    return "fast";
+  }
+}
 
 export async function POST(request: Request, { params }: { params: Promise<{ kind: string }> }) {
   const kind = historyKind.safeParse((await params).kind);
@@ -22,6 +38,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ kin
     const db = await routeSupabase();
     if (!db) throw new SignInNeeded();
     const userId = await signedInUserId(db);
+    const [plan, mode] = await Promise.all([loadPlanStatus(db, userId), requestedMode(request)]);
+    const allowed = canRunCheck(plan, mode);
+    if (!allowed.allowed) {
+      return Response.json({ code: allowed.reason }, { status: 403, headers });
+    }
+
     const response = await handlers[kind.data](request);
     if (!response.ok) return response;
 
