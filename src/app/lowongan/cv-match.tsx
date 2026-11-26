@@ -14,7 +14,7 @@ const STATUS_ORDER: Record<MatchStatus, number> = { missing: 0, partial: 1, met:
 
 export function CvMatchSection({ adText }: { adText: string }) {
   const { t, lang } = useLang();
-  const { cv, signedIn } = useCvProfile();
+  const { cv, signedIn, loading: cvLoading } = useCvProfile();
   const { state, run } = useCheck<CvMatch>("/api/match-cv");
   const pending = state.status === "pending";
 
@@ -25,7 +25,9 @@ export function CvMatchSection({ adText }: { adText: string }) {
       </h2>
       <p className="text-callout text-ink-soft">{t.match.hint}</p>
 
-      {!signedIn ? (
+      {cvLoading ? (
+        <p className="text-body text-ink-soft">{t.profile.loading}</p>
+      ) : !signedIn ? (
         <>
           <p className="text-body text-ink">{t.match.needSignIn}</p>
           <Link href="/masuk" className={LINK}>

@@ -35,7 +35,7 @@ export default function InterviewPage() {
   const [form, setForm] = useState(EMPTY);
   const [mode, setMode] = useState<Mode>("fast");
   const [portfolioFile, setPortfolioFile] = useState<File | null>(null);
-  const { cv, signedIn } = useCvProfile();
+  const { cv, signedIn, loading: cvLoading } = useCvProfile();
   const pending = state.status === "pending";
   const titleRef = useRef<HTMLHeadingElement>(null);
 
@@ -62,7 +62,7 @@ export default function InterviewPage() {
   return (
     <div className="mx-auto max-w-[76rem] px-4 sm:px-6 lg:px-8 py-12 flex flex-col gap-12">
       <header className="flex flex-col gap-3 max-w-prose">
-        <h1 ref={titleRef} tabIndex={-1} className="text-large-title text-ink focus-visible:outline-none">
+        <h1 ref={titleRef} tabIndex={-1} className="text-large-title text-ink">
           {t.interview.title}
         </h1>
         <p className="text-body text-ink-soft">{t.interview.intro}</p>
@@ -79,7 +79,9 @@ export default function InterviewPage() {
           <Field type="url" inputMode="url" label={t.interview.companyUrlLabel} hint={t.interview.companyUrlHint} placeholder="https://" value={form.companyUrl} onChange={set("companyUrl")} disabled={pending} />
           <Field as="textarea" label={t.interview.profileLabel} hint={t.interview.profileHint} value={form.profile} onChange={set("profile")} rows={4} disabled={pending} />
           <p className="text-callout text-ink-soft">
-            {cv ? (
+            {cvLoading ? (
+              t.profile.loading
+            ) : cv ? (
               <>
                 {t.interview.cvUsed} <span className="text-ink">{cv.headline || cv.name}</span>{" "}
                 <Link href="/profil" className={LINK}>
@@ -116,7 +118,7 @@ export default function InterviewPage() {
           {pending && <Notice variant="info">{t.interview.pendingHint}</Notice>}
           {state.status === "error" && <Notice variant="error">{state.message}</Notice>}
           <div>
-            <Button type="submit" disabled={form.role.trim().length < 2} pending={pending}>
+            <Button type="submit" disabled={form.role.trim().length < 2 || cvLoading} pending={pending}>
               {t.interview.submit}
             </Button>
           </div>
@@ -133,7 +135,7 @@ function Result({ prep, onAgain }: { prep: InterviewPrep; onAgain: () => void })
   return (
     <div className="flex flex-col gap-8">
       <section className={`${SURFACE} flex flex-col gap-3`} aria-labelledby="snapshot-title">
-        <h2 id="snapshot-title" ref={headingRef} tabIndex={-1} className="text-title-2 text-ink focus-visible:outline-none">
+        <h2 id="snapshot-title" ref={headingRef} tabIndex={-1} className="text-title-2 text-ink">
           {[prep.role, prep.company].filter(Boolean).join(" · ")}
         </h2>
         <p className="text-body text-ink">{prep.candidateSnapshot}</p>

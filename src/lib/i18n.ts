@@ -294,6 +294,7 @@ const id = {
     rewriteHint: "Iklan yang sama tanpa syarat yang ditandai. Bisa kamu bagikan ke perekrut sebagai saran.",
     copy: "Salin versi inklusif",
     copied: "Tersalin",
+    copyFailed: "Belum bisa menyalin. Pilih teksnya lalu salin sendiri.",
     again: "Periksa lowongan lain",
     resultTitle: "Hasil pemeriksaan lowongan",
     rules: {
@@ -743,6 +744,7 @@ const en: Dict = {
     rewriteHint: "The same ad without the flagged requirements. You can share it with the recruiter as a suggestion.",
     copy: "Copy inclusive version",
     copied: "Copied",
+    copyFailed: "Could not copy. Select the text and copy it yourself.",
     again: "Check another job ad",
     resultTitle: "Job ad check result",
     rules: {
