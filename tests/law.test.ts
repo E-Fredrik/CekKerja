@@ -85,6 +85,7 @@ const contract = (clauses: ContractResult["clauses"]): ContractResult => ({
   contractType: "PKWT",
   monthlyWage: null,
   city: null,
+  province: null,
   durationMonths: null,
   clauses,
   summary: "",

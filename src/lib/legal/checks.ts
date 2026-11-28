@@ -1,6 +1,6 @@
 import type { ContractResult, Verdict } from "../ai/schemas.ts";
 
-export type NumberFinding = { ruleId: string; verdict: Verdict; found: number; limit: number };
+export type NumberFinding = { ruleId: string; verdict: Verdict; found: number; limit: number; basis?: string };
 
 export const INTERNSHIP_MAX_MONTHS = 6;
 export const PKWT_MAX_MONTHS = 24;
@@ -14,9 +14,16 @@ const finding = (ruleId: string, found: number, limit: number, ok: boolean): Num
   limit,
 });
 
-export function checkWage(monthlyWage: number | null, minimumWage: number | null): NumberFinding | null {
+export function checkWage(
+  monthlyWage: number | null,
+  minimumWage: number | null,
+  basis?: string,
+  cityLevel = false,
+): NumberFinding | null {
   if (!known(monthlyWage) || !known(minimumWage)) return null;
-  return finding("minimum-wage", monthlyWage, minimumWage, monthlyWage >= minimumWage);
+  const result = finding("minimum-wage", monthlyWage, minimumWage, monthlyWage >= minimumWage);
+  const verdict = result.verdict === "green" && !cityLevel ? "yellow" : result.verdict;
+  return basis ? { ...result, verdict, basis } : { ...result, verdict };
 }
 
 export function checkDuration(contractType: ContractResult["contractType"], months: number | null): NumberFinding | null {
