@@ -1,3 +1,8 @@
+import { createServerClient } from "@supabase/ssr";
+import { loadPlanStatus } from "../../../lib/billing/plan.ts";
+import { signedInUserId } from "../../../lib/cv/store.ts";
+import { supabaseConfig } from "../../../lib/db/config.ts";
+import { SignInNeeded } from "../../../lib/http.ts";
 import { buildEmail, createRateLimiter, EmailRequest, MAX_EMAIL_REQUEST_BYTES } from "../../../lib/mail/email-request.ts";
 import { sendMail } from "../../../lib/mail/send.ts";
 
@@ -9,6 +14,37 @@ const fail = (error: string, status: number) => Response.json({ error }, { statu
 
 function clientKey(req: Request) {
   return req.headers.get("x-real-ip")?.trim() || req.headers.get("x-forwarded-for")?.split(",").pop()?.trim() || "local";
+}
+
+function parseCookies(header: string | null) {
+  if (!header) return [];
+  return header.split(";").flatMap((part) => {
+    const idx = part.indexOf("=");
+    if (idx <= 0) return [];
+    return [{ name: part.slice(0, idx).trim(), value: part.slice(idx + 1).trim() }];
+  });
+}
+
+async function requirePremiumIfConfigured(req: Request): Promise<Response | null> {
+  const config = supabaseConfig();
+  if (!config) return null;
+
+  const db = createServerClient(config.url, config.key, {
+    cookies: {
+      getAll: () => parseCookies(req.headers.get("cookie")),
+      setAll: () => {},
+    },
+  });
+
+  try {
+    const userId = await signedInUserId(db);
+    const plan = await loadPlanStatus(db, userId);
+    if (!plan.isPremium) return fail("premiumRequired", 403);
+    return null;
+  } catch (error) {
+    if (error instanceof SignInNeeded) return fail("signIn", 401);
+    return fail("sendFailed", 500);
+  }
 }
 
 export async function POST(req: Request) {
@@ -32,6 +68,10 @@ export async function POST(req: Request) {
 
   const { to, mail } = buildEmail(parsed.data);
   if (!allowRecipient(to.toLowerCase()) || !allowAll("all")) return fail("rateLimited", 429);
+
+  const blocked = await requirePremiumIfConfigured(req);
+  if (blocked) return blocked;
+
   try {
     await sendMail(to, mail);
   } catch (error) {

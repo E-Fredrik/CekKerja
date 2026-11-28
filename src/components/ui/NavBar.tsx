@@ -50,8 +50,9 @@ export function NavBar() {
         { href: "/kontrak", label: t.nav.kontrak },
         { href: "/interview", label: t.nav.interview },
         { href: "/riwayat", label: t.nav.riwayat },
+        { href: "/premium", label: t.nav.premium },
       ]
-    : [];
+    : [{ href: "/premium", label: t.nav.premium }];
 
   const langOptions = [
     { value: "id" as Lang, label: t.lang.id },
