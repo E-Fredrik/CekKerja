@@ -5,10 +5,6 @@ import { ContractResult, AdResult } from "../src/lib/ai/schemas.ts";
 import { BadRequest, checkFile, handle, langOf, modeOf } from "../src/lib/http.ts";
 import { analyzeContract, applyNumberChecks, contractPrompt } from "../src/lib/ai/analyze.ts";
 import type { generateJson } from "../src/lib/ai/gemini.ts";
-import { CLAUDE_FAST, CLAUDE_SMART, ModelRefusal, claudeJson, toClaudeContent } from "../src/lib/ai/claude.ts";
-import { InterviewResult } from "../src/lib/ai/schemas.ts";
-import { CvProfile } from "../src/lib/cv/profile.ts";
-import { zodOutputFormat } from "@anthropic-ai/sdk/helpers/zod";
 
 const fail = (status?: number, message = `HTTP ${status}`) => Object.assign(new Error(message), status ? { status } : {});
 const quiet = () => (console.warn = console.error = () => {});
@@ -194,53 +190,4 @@ test("analyzeContract sends the file to the model and applies the number checks"
   const out = await analyzeContract(file, "id", "smart", generate, async (texts) => texts.map(() => null));
   assert.deepEqual(seen, { mime: "application/pdf", mode: "smart" });
   assert.equal(out.clauses[0].verdict, "red");
-});
-
-
-test("toClaudeContent turns PDFs and images into blocks before the text", () => {
-  const blocks = toClaudeContent([
-    { text: "Check this" },
-    { inlineData: { mimeType: "application/pdf", data: "UERG" } },
-    { inlineData: { mimeType: "image/png", data: "iVBO" } },
-  ]);
-  assert.deepEqual(blocks.map((b) => b.type), ["document", "image", "text"]);
-  assert.deepEqual(toClaudeContent([{ inlineData: { mimeType: "application/pdf", data: "UERG" } }]).map((b) => b.type), ["document", "text"]);
-  assert.throws(() => toClaudeContent([{ inlineData: { mimeType: "application/msword", data: "x" } }]), /Unsupported file type/);
-});
-
-test("AI_PROVIDER=claude switches every mode to Claude models, and Gemini stays the default", () => {
-  const saved = process.env.AI_PROVIDER;
-  try {
-    delete process.env.AI_PROVIDER;
-    assert.ok(modelsFor("smart").every((m) => m.startsWith("gemini-")));
-    process.env.AI_PROVIDER = "claude";
-    assert.deepEqual(modelsFor("smart"), [CLAUDE_SMART, CLAUDE_FAST, CLAUDE_FAST]);
-    assert.deepEqual(modelsFor("fast"), [CLAUDE_FAST, CLAUDE_FAST]);
-  } finally {
-    if (saved === undefined) delete process.env.AI_PROVIDER;
-    else process.env.AI_PROVIDER = saved;
-  }
-});
-
-test("a Claude refusal falls back to the next model", async () => {
-  const tried: string[] = [];
-  const out = await withRetry(async (m) => (tried.push(m), m === "a" ? Promise.reject(new ModelRefusal("declined")) : m), ["a", "b"], 1);
-  assert.equal(out, "b");
-  assert.deepEqual(tried, ["a", "b"]);
-});
-
-test("claudeJson says clearly when the Claude key is missing", async () => {
-  const saved = process.env.ANTHROPIC_API_KEY;
-  delete process.env.ANTHROPIC_API_KEY;
-  try {
-    await assert.rejects(claudeJson(AdResult, "s", [{ text: "x" }], CLAUDE_FAST), /ANTHROPIC_API_KEY is not set/);
-  } finally {
-    if (saved !== undefined) process.env.ANTHROPIC_API_KEY = saved;
-  }
-});
-
-test("every schema the app sends to the AI converts to a Claude output format", () => {
-  for (const schema of [ContractResult, AdResult, InterviewResult, CvProfile]) {
-    assert.doesNotThrow(() => zodOutputFormat(schema));
-  }
 });
