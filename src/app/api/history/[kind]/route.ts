@@ -1,6 +1,6 @@
-import { POST as checkAd } from "../../check-ad/route.ts";
-import { POST as checkContract } from "../../check-contract/route.ts";
-import { POST as prepareInterview } from "../../interview/route.ts";
+import { checkAdRoute as checkAd } from "../../check-ad/handler.ts";
+import { checkContractRoute as checkContract } from "../../check-contract/handler.ts";
+import { interviewRoute as prepareInterview } from "../../interview/handler.ts";
 import { canRunCheck, loadPlanStatus } from "../../../../lib/billing/plan.ts";
 import { signedInUserId } from "../../../../lib/cv/store.ts";
 import { historyEntry, historyKind, saveHistory } from "../../../../lib/db/history.ts";
