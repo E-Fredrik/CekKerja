@@ -1,5 +1,6 @@
 "use client";
 
+import { PageHeader } from "@/components/ui/PageHeader.tsx";
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { useSession } from "@/components/auth/session.tsx";
@@ -188,11 +189,8 @@ export function PremiumClient() {
   const premiumMeta = formattedUntil ? p.premiumActiveUntil.replace("{date}", formattedUntil) : undefined;
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-8 px-4 py-12 sm:px-6 lg:px-8">
-      <header className="flex flex-col gap-3">
-        <h1 className="text-large-title text-ink">{p.title}</h1>
-        <p className="max-w-2xl text-body text-ink-soft">{p.lead}</p>
-      </header>
+    <div className="mx-auto flex max-w-4xl flex-col gap-8 px-4 pb-16 sm:px-6 lg:px-8">
+      <PageHeader title={p.title} intro={p.lead} width="narrow" />
 
       {!ready || (user && !fetched && !info) ? (
         <p role="status" className="text-body text-ink-soft">

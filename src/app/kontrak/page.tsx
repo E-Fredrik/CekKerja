@@ -13,6 +13,8 @@ import { Segmented } from "@/components/ui/Segmented.tsx";
 import { SummaryPlate } from "@/components/ui/SummaryPlate.tsx";
 import { useLang } from "@/components/ui/lang.tsx";
 import { useCheck } from "@/components/ui/useCheck.ts";
+import { PageHeader } from "@/components/ui/PageHeader.tsx";
+import { VerdictLegend } from "@/components/landing/VerdictLegend.tsx";
 
 const VERDICT_ORDER: Record<Verdict, number> = { red: 0, yellow: 1, green: 2 };
 
@@ -40,16 +42,14 @@ export default function KontrakPage() {
   }
 
   return (
-    <div className="mx-auto max-w-[76rem] px-4 sm:px-6 lg:px-8 py-12 flex flex-col gap-12">
-      <header className="flex flex-col gap-3 max-w-prose">
-        <h1 className="text-large-title text-ink">{t.kontrak.title}</h1>
-        <p className="text-body text-ink-soft">{t.kontrak.intro}</p>
-      </header>
+    <div className="mx-auto max-w-[76rem] px-4 sm:px-6 lg:px-8 pb-16 flex flex-col gap-12">
+      <PageHeader title={t.kontrak.title} intro={t.kontrak.intro} />
 
       {state.status === "done" ? (
         <Result check={state.result} fileName={file?.name ?? ""} onAgain={startOver} />
       ) : (
-        <form onSubmit={submit} className={`${SURFACE} flex flex-col gap-4 max-w-2xl`}>
+        <div className="grid gap-8 lg:grid-cols-[minmax(0,42rem)_minmax(0,1fr)] lg:items-start">
+        <form onSubmit={submit} className={`${SURFACE} flex flex-col gap-4`}>
           <p className="text-[16px] font-[600] text-ink">{t.kontrak.upload}</p>
           <FileDrop onFile={setFile} disabled={state.status === "pending"} />
           <div className="flex flex-col gap-1.5">
@@ -74,6 +74,11 @@ export default function KontrakPage() {
             </Button>
           </div>
         </form>
+        <aside className="flex flex-col gap-3 lg:pt-2" aria-labelledby="legend-title">
+          <h2 id="legend-title" className="text-title-2 text-ink">{t.landing.legendLabel}</h2>
+          <VerdictLegend active={null} />
+        </aside>
+        </div>
       )}
 
       {state.status === "pending" && <Skeleton />}

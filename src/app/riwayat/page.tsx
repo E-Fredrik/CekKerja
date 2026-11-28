@@ -1,5 +1,6 @@
 "use client";
 
+import { PageHeader } from "@/components/ui/PageHeader.tsx";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useSession } from "@/components/auth/session.tsx";
@@ -17,8 +18,8 @@ export default function HistoryPage() {
   const { ready, user } = useSession();
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-8 px-4 py-12 sm:px-6 lg:px-8">
-      <h1 className="text-large-title text-ink">{t.history.title}</h1>
+    <div className="mx-auto flex max-w-4xl flex-col gap-8 px-4 pb-16 sm:px-6 lg:px-8">
+      <PageHeader title={t.history.title} width="narrow" />
       {!ready ? (
         <p role="status" className="text-body text-ink-soft">{t.history.loading}</p>
       ) : user ? (

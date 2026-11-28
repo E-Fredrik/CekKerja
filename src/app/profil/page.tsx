@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/Button.tsx";
 import { FileDrop } from "@/components/ui/FileDrop.tsx";
 import { Notice } from "@/components/ui/Notice.tsx";
 import { useLang } from "@/components/ui/lang.tsx";
+import { PageHeader } from "@/components/ui/PageHeader.tsx";
 
 const SURFACE = "bg-surface rounded-lg shadow-(--shadow-surface) p-6 sm:p-8";
 
@@ -58,11 +59,8 @@ export default function ProfilPage() {
   }
 
   return (
-    <div className="mx-auto max-w-[76rem] px-4 sm:px-6 lg:px-8 py-12 flex flex-col gap-12">
-      <header className="flex flex-col gap-3 max-w-prose">
-        <h1 className="text-large-title text-ink">{p.title}</h1>
-        <p className="text-body text-ink-soft">{p.intro}</p>
-      </header>
+    <div className="mx-auto max-w-[76rem] px-4 sm:px-6 lg:px-8 pb-16 flex flex-col gap-12">
+      <PageHeader title={p.title} intro={p.intro} />
 
       {loading ? (
         <p className="text-callout text-ink-soft" role="status">{p.loading}</p>
