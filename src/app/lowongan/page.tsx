@@ -39,7 +39,7 @@ export default function LowonganPage() {
   return (
     <div className="mx-auto max-w-[76rem] px-4 sm:px-6 lg:px-8 py-12 flex flex-col gap-12">
       <header className="flex flex-col gap-3 max-w-prose">
-        <h1 ref={titleRef} tabIndex={-1} className="text-large-title text-ink focus-visible:outline-none">
+        <h1 ref={titleRef} tabIndex={-1} className="text-large-title text-ink">
           {t.lowongan.title}
         </h1>
         <p className="text-body text-ink-soft">{t.lowongan.intro}</p>
@@ -82,7 +82,7 @@ export default function LowonganPage() {
 
 function Result({ check, onAgain }: { check: AdCheck; onAgain: () => void }) {
   const { t } = useLang();
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<boolean | null>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   useEffect(() => headingRef.current?.focus(), []);
   const flags = check.flags
@@ -98,8 +98,10 @@ function Result({ check, onAgain }: { check: AdCheck; onAgain: () => void }) {
     try {
       await navigator.clipboard.writeText(check.inclusiveRewrite);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {}
+      setTimeout(() => setCopied(null), 2000);
+    } catch {
+      setCopied(false);
+    }
   }
 
   return (
@@ -143,14 +145,14 @@ function Result({ check, onAgain }: { check: AdCheck; onAgain: () => void }) {
       <div className="flex flex-wrap gap-3">
         {check.inclusiveRewrite && (
           <Button onClick={copy}>
-            {copied ? t.lowongan.copied : t.lowongan.copy}
+            {t.lowongan.copy}
           </Button>
         )}
         <Button variant="secondary" onClick={onAgain}>
           {t.lowongan.again}
         </Button>
-        <span role="status" className="sr-only">
-          {copied ? t.lowongan.copied : ""}
+        <span role="status" className="self-center text-callout text-ink-soft">
+          {copied === null ? "" : copied ? t.lowongan.copied : t.lowongan.copyFailed}
         </span>
       </div>
     </div>

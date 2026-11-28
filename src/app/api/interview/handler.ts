@@ -1,7 +1,7 @@
 import { BadRequest, handle } from "../../../lib/http.ts";
 import { parseInterviewForm, parseInterviewRequest, prepareInterview } from "./prepare-interview.ts";
 
-export const POST = handle(async (req) => {
+export const interviewRoute = handle(async (req) => {
   if (req.headers.get("content-type")?.includes("multipart/form-data")) {
     const form = await req.formData().catch(() => {
       throw new BadRequest("Send the interview details as a form");

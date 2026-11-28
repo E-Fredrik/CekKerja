@@ -1,7 +1,7 @@
 import { analyzeContract } from "../../../lib/ai/analyze.ts";
 import { BadRequest, checkFile, handle, langOf, modeOf } from "../../../lib/http.ts";
 
-export const POST = handle(async (req) => {
+export const checkContractRoute = handle(async (req) => {
   const form = await req.formData().catch(() => {
     throw new BadRequest("Upload the contract as a form with a file");
   });
