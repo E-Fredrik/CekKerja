@@ -13,6 +13,7 @@ import { Segmented } from "@/components/ui/Segmented.tsx";
 import { useLang } from "@/components/ui/lang.tsx";
 import { useCheck } from "@/components/ui/useCheck.ts";
 import { useCvProfile } from "@/components/profile/cv-store.ts";
+import { PageHeader } from "@/components/ui/PageHeader.tsx";
 
 const SURFACE = "bg-surface rounded-lg shadow-(--shadow-surface) p-6 sm:p-8";
 
@@ -60,13 +61,8 @@ export default function InterviewPage() {
   }
 
   return (
-    <div className="mx-auto max-w-[76rem] px-4 sm:px-6 lg:px-8 py-12 flex flex-col gap-12">
-      <header className="flex flex-col gap-3 max-w-prose">
-        <h1 ref={titleRef} tabIndex={-1} className="text-large-title text-ink">
-          {t.interview.title}
-        </h1>
-        <p className="text-body text-ink-soft">{t.interview.intro}</p>
-      </header>
+    <div className="mx-auto max-w-[76rem] px-4 sm:px-6 lg:px-8 pb-16 flex flex-col gap-12">
+      <PageHeader title={t.interview.title} intro={t.interview.intro} titleRef={titleRef} />
 
       {state.status === "done" ? (
         <Result prep={state.result} onAgain={startOver} />

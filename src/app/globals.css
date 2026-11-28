@@ -34,6 +34,9 @@
   --color-go-wash: var(--go-wash);
   --color-on-go: var(--on-go);
   --color-housing: var(--housing);
+  --color-gantry: var(--gantry);
+  --color-on-gantry: var(--on-gantry);
+  --color-on-gantry-soft: var(--on-gantry-soft);
 
   --text-large-title: var(--size-large-title);
   --text-large-title--line-height: var(--leading-large-title);
@@ -77,11 +80,16 @@ body {
   line-height: var(--leading-body);
   caret-color: var(--sign-blue);
   accent-color: var(--sign-blue);
+  overflow-x: clip;
+}
+
+html {
+  scrollbar-color: var(--line-strong) var(--ground);
 }
 
 ::selection {
-  background: var(--brand-wash);
-  color: var(--ink);
+  background: var(--warn);
+  color: var(--on-warn);
 }
 
 :focus-visible {
@@ -97,5 +105,64 @@ body {
   to {
     opacity: 1;
     transform: translateX(0) skewX(0);
+  }
+}
+
+.gantry {
+  position: relative;
+  margin-inline: calc(50% - 50vw);
+  padding-block: var(--space-6) calc(var(--space-8) + var(--space-3));
+  background: linear-gradient(180deg, var(--gantry) 0%, var(--gantry) 62%, var(--gantry-deep) 100%);
+  color: var(--on-gantry);
+}
+
+.gantry::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+  bottom: var(--space-4);
+  height: 5px;
+  background: repeating-linear-gradient(90deg, var(--lane) 0 56px, transparent 56px 104px);
+}
+
+.gantry-sign {
+  position: relative;
+  overflow: hidden;
+  border: 2px solid var(--gantry-rule);
+  border-radius: var(--radius-md);
+  padding: var(--space-5) var(--space-5) var(--space-6);
+}
+
+.gantry-sign::before {
+  content: "";
+  position: absolute;
+  inset: -40% auto -40% -30%;
+  width: 28%;
+  background: linear-gradient(100deg, transparent, rgba(255, 255, 255, 0.16), transparent);
+  transform: translateX(-120%) skewX(-12deg);
+  animation: signCatch 1600ms var(--ease-out) 200ms both;
+  pointer-events: none;
+}
+
+.gantry :focus-visible {
+  outline-color: var(--on-gantry);
+}
+
+@keyframes signCatch {
+  to {
+    transform: translateX(520%) skewX(-12deg);
+  }
+}
+
+@media (min-width: 640px) {
+  .gantry-sign {
+    padding: var(--space-6) var(--space-8) var(--space-8);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gantry-sign::before {
+    animation: none;
+    display: none;
   }
 }
