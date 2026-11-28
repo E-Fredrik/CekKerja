@@ -129,6 +129,7 @@ const contract = (over: Partial<ContractResult>) =>
     summary: "s",
     monthlyWage: null,
     city: null,
+    province: null,
     durationMonths: null,
     clauses: [],
     negotiationMessage: "m",
@@ -156,9 +157,13 @@ test("applyNumberChecks lets code decide number rules and never the model", () =
   assert.deepEqual(out.numberChecks, [{ ruleId: "internship-length", verdict: "red", found: 18, limit: 6 }]);
 });
 
-test("applyNumberChecks uses the wage check once a minimum wage is known", () => {
-  const out = applyNumberChecks(contract({ monthlyWage: 5_000_000, clauses: [clause("minimum-wage", "red")] }), 4_000_000);
-  assert.equal(out.clauses[0].verdict, "green");
+test("applyNumberChecks uses the provincial minimum wage once it is known", () => {
+  const wage = { amount: 4_000_000, place: "Jawa Timur", label: "UMP Jawa Timur 2026", url: "https://example.org" };
+  const above = applyNumberChecks(contract({ monthlyWage: 5_000_000, clauses: [clause("minimum-wage", "red")] }), wage);
+  assert.equal(above.clauses[0].verdict, "yellow");
+  assert.deepEqual(above.numberChecks, [{ ruleId: "minimum-wage", verdict: "yellow", found: 5_000_000, limit: 4_000_000, basis: "UMP Jawa Timur 2026" }]);
+  const below = applyNumberChecks(contract({ monthlyWage: 3_000_000, clauses: [clause("minimum-wage", "green")] }), wage);
+  assert.equal(below.clauses[0].verdict, "red");
 });
 
 test("applyNumberChecks attaches sources and maps unknown or ad-only rules to other", () => {

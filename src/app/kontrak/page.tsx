@@ -12,6 +12,9 @@ import { Notice } from "@/components/ui/Notice.tsx";
 import { Segmented } from "@/components/ui/Segmented.tsx";
 import { SummaryPlate } from "@/components/ui/SummaryPlate.tsx";
 import { useLang } from "@/components/ui/lang.tsx";
+import { VerdictSign } from "@/components/ui/VerdictSign.tsx";
+import type { NumberFinding } from "@/lib/legal/checks.ts";
+import { UMP_SOURCE_URL } from "@/lib/legal/wages.ts";
 import { useCheck } from "@/components/ui/useCheck.ts";
 
 const VERDICT_ORDER: Record<Verdict, number> = { red: 0, yellow: 1, green: 2 };
@@ -124,6 +127,8 @@ function Result({ check, fileName, onAgain }: { check: ContractCheck; fileName: 
         ))}
       </section>
 
+      {check.numberChecks.length > 0 && <NumberChecks findings={check.numberChecks} />}
+
       {check.negotiationMessage && (
         <section className={`${SURFACE} flex flex-col gap-3`} aria-labelledby="hr-title">
           <h2 id="hr-title" className="text-title-2 text-ink">
@@ -147,6 +152,47 @@ function Result({ check, fileName, onAgain }: { check: ContractCheck; fileName: 
         </Button>
       </div>
     </div>
+  );
+}
+
+const rupiah = (n: number) => n.toLocaleString("id-ID");
+
+function NumberChecks({ findings }: { findings: NumberFinding[] }) {
+  const { t } = useLang();
+  const k = t.kontrak;
+  const line = (f: NumberFinding) => {
+    const template =
+      f.ruleId === "minimum-wage" ? (f.verdict === "red" ? k.wageBelow : k.wageAbove) : f.verdict === "red" ? k.lengthOver : k.lengthOk;
+    const money = f.ruleId === "minimum-wage";
+    return template
+      .replace("{found}", money ? rupiah(f.found) : String(f.found))
+      .replace("{limit}", money ? rupiah(f.limit) : String(f.limit))
+      .replace("{basis}", f.basis ?? "");
+  };
+  return (
+    <section className={`${SURFACE} flex flex-col gap-4`} aria-labelledby="numbers-title">
+      <div className="flex flex-col gap-1">
+        <h2 id="numbers-title" className="text-title-2 text-ink">
+          {k.numbersTitle}
+        </h2>
+        <p className="text-callout text-ink-soft">{k.numbersHint}</p>
+      </div>
+      <ul className="flex flex-col gap-3">
+        {findings.map((f) => (
+          <li key={f.ruleId} className="flex items-start gap-3 text-body text-ink">
+            <span className="shrink-0 mt-0.5">
+              <VerdictSign verdict={f.verdict} size={20} />
+            </span>
+            <span>{line(f)}</span>
+          </li>
+        ))}
+      </ul>
+      {findings.some((f) => f.ruleId === "minimum-wage") && (
+        <a href={UMP_SOURCE_URL} target="_blank" rel="noopener noreferrer" className="text-footnote text-sign-blue underline underline-offset-4 hover:no-underline self-start">
+          {k.wageSource}
+        </a>
+      )}
+    </section>
   );
 }
 

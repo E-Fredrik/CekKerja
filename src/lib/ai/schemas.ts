@@ -32,6 +32,7 @@ export const ContractResult = z.object({
   summary: z.string(),
   monthlyWage: z.number().nullable().describe("Monthly wage in rupiah if stated, else null"),
   city: z.string().nullable().describe("Work location city if stated, else null"),
+  province: z.string().nullable().describe("Province of the work location as written, or the province the stated city is in, else null"),
   durationMonths: z.number().nullable().describe("Contract or internship length in months if stated, else null"),
   clauses: z.array(Clause),
   negotiationMessage: z.string().describe("Polite message to HR about the red and yellow clauses"),
